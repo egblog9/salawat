@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Header } from "./components/Header";
 import { TasbeehCounter } from "./components/TasbeehCounter";
 import { SheikhAudioStudio } from "./components/SheikhAudioStudio";
 import { ShareReminder } from "./components/ShareReminder";
 import { VirtuesSection } from "./components/VirtuesSection";
 import { AudioFloatingBar } from "./components/AudioFloatingBar";
+import { AudioReminderCard } from "./components/AudioReminderCard";
+import { ReminderToast } from "./components/ReminderToast";
 import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats } from "./types";
-import { sheikhAudioManager } from "./utils/audio";
+import { sheikhAudioManager, reminderAudioManager } from "./utils/audio";
 import {
   Heart,
   Users,
@@ -49,6 +51,120 @@ export default function App() {
   const [totalRepeats, setTotalRepeats] = useState<number>(1);
   const [volume, setVolume] = useState<number>(1.0);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
+
+  // Voice Reminder (التذكير الصوتي) State
+  const [soundReminderEnabled, setSoundReminderEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("soundReminderEnabled") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [soundReminderInterval, setSoundReminderInterval] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("soundReminderInterval");
+      return saved ? parseInt(saved, 10) || 10 : 10;
+    } catch (e) {
+      return 10;
+    }
+  });
+
+  const [soundMuted, setSoundMuted] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("soundMuted") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [showReminderToast, setShowReminderToast] = useState<boolean>(false);
+  const [isTestingSound, setIsTestingSound] = useState<boolean>(false);
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(() => soundReminderInterval * 60);
+
+  // Sync Voice Reminder Preferences to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("soundReminderEnabled", soundReminderEnabled.toString());
+      localStorage.setItem("soundReminderInterval", soundReminderInterval.toString());
+      localStorage.setItem("soundMuted", soundMuted.toString());
+    } catch (e) {
+      // ignore
+    }
+  }, [soundReminderEnabled, soundReminderInterval, soundMuted]);
+
+  // Robust Voice Reminder Timer System (Handles tab visibility & prevents duplicate timers/blasts)
+  useEffect(() => {
+    if (!soundReminderEnabled) {
+      reminderAudioManager.stopReminder();
+      setRemainingSeconds(soundReminderInterval * 60);
+      return;
+    }
+
+    let nextTriggerTimestamp = Date.now() + soundReminderInterval * 60 * 1000;
+    setRemainingSeconds(soundReminderInterval * 60);
+
+    const intervalId = setInterval(() => {
+      const now = Date.now();
+      const diff = Math.max(0, Math.ceil((nextTriggerTimestamp - now) / 1000));
+      setRemainingSeconds(diff);
+
+      if (now >= nextTriggerTimestamp) {
+        // Trigger reminder event
+        setShowReminderToast(true);
+        reminderAudioManager.playReminder({
+          isMuted: soundMuted,
+          onStart: () => {},
+          onEnded: () => {},
+        });
+
+        // Set next trigger cleanly
+        nextTriggerTimestamp = Date.now() + soundReminderInterval * 60 * 1000;
+        setRemainingSeconds(soundReminderInterval * 60);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [soundReminderEnabled, soundReminderInterval, soundMuted]);
+
+  // Toggle Reminder Activation
+  const handleToggleReminder = (enabled: boolean) => {
+    if (enabled) {
+      reminderAudioManager.unlockAudio();
+    } else {
+      reminderAudioManager.stopReminder();
+    }
+    setSoundReminderEnabled(enabled);
+  };
+
+  // Change Interval
+  const handleChangeReminderInterval = (minutes: number) => {
+    setSoundReminderInterval(minutes);
+    setRemainingSeconds(minutes * 60);
+  };
+
+  // Toggle Mute
+  const handleToggleReminderMute = (muted: boolean) => {
+    setSoundMuted(muted);
+  };
+
+  // Test Sound
+  const handleTestReminderSound = () => {
+    setIsTestingSound(true);
+    setShowReminderToast(true);
+    reminderAudioManager.playReminder({
+      isMuted: false, // In test mode, always play audio so user can preview it
+      onStart: () => setIsTestingSound(true),
+      onEnded: () => setIsTestingSound(false),
+    });
+
+    setTimeout(() => {
+      setIsTestingSound(false);
+    }, 4500);
+  };
+
 
   // Cache siteStats in localStorage
   useEffect(() => {
@@ -204,7 +320,16 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col selection:bg-emerald-600 selection:text-white">
+    <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col selection:bg-emerald-600 selection:text-white relative">
+      
+      {/* Voice Reminder Global Floating Toast Notification */}
+      <ReminderToast
+        isVisible={showReminderToast}
+        onClose={() => setShowReminderToast(false)}
+        isMuted={soundMuted}
+        onQuickTasbeeh={handleIncrementTasbeeh}
+      />
+
       {/* Top Header */}
       <Header
         activeTab={activeTab}
@@ -215,7 +340,7 @@ export default function App() {
       />
 
       {/* Main Content Container */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:px-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-6 sm:px-6 space-y-6">
         
         {/* Tab 1: Tasbeeh and Prophetic Formulas */}
         {activeTab === "tasbeeh" && (
@@ -231,6 +356,23 @@ export default function App() {
             onNavigateToShare={() => setActiveTab("share")}
             collectiveTotal={siteStats.totalTasbeehat}
           />
+        )}
+
+        {/* Tab: Dedicated Voice Reminder Page (🔊 التذكير الصوتي - تجريبي) */}
+        {activeTab === "reminder" && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            <AudioReminderCard
+              enabled={soundReminderEnabled}
+              intervalMinutes={soundReminderInterval}
+              isMuted={soundMuted}
+              onToggleEnabled={handleToggleReminder}
+              onChangeInterval={handleChangeReminderInterval}
+              onToggleMute={handleToggleReminderMute}
+              onTestSound={handleTestReminderSound}
+              isTestingSound={isTestingSound}
+              remainingSeconds={remainingSeconds}
+            />
+          </div>
         )}
 
         {/* Tab 2: Authentic Sheikh Recitations & Audio Studio */}
@@ -251,6 +393,7 @@ export default function App() {
             onChangePlaybackRate={handlePlaybackRateChange}
           />
         )}
+
 
         {/* Tab 3: Remind Others & Sharing Hub ("وتفكر غيرك") */}
         {activeTab === "share" && (

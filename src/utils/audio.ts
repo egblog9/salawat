@@ -264,4 +264,117 @@ class SheikhAudioManager {
   }
 }
 
+class ReminderAudioManager {
+  private reminderAudio: HTMLAudioElement | null = null;
+  private isReminderPlaying: boolean = false;
+  private primaryUrl = "/audio/salawat-reminder.mp3";
+  private fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+
+  // Pre-unlock audio on user click to comply with browser autoplay policies
+  public unlockAudio(): void {
+    try {
+      if (!this.reminderAudio) {
+        this.reminderAudio = new Audio();
+      }
+      this.reminderAudio.src = this.primaryUrl;
+      this.reminderAudio.volume = 0.01;
+      this.reminderAudio.load();
+      const p = this.reminderAudio.play();
+      if (p) {
+        p.then(() => {
+          if (this.reminderAudio) {
+            this.reminderAudio.pause();
+            this.reminderAudio.currentTime = 0;
+            this.reminderAudio.volume = 0.85;
+          }
+        }).catch(() => {});
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  public playReminder(options?: {
+    isMuted?: boolean;
+    onStart?: () => void;
+    onEnded?: () => void;
+  }): void {
+    if (options?.isMuted) {
+      options.onStart?.();
+      setTimeout(() => {
+        options.onEnded?.();
+      }, 3500);
+      return;
+    }
+
+    if (!this.reminderAudio) {
+      this.reminderAudio = new Audio();
+    }
+
+    const audio = this.reminderAudio;
+    audio.pause();
+    audio.currentTime = 0;
+    audio.volume = 0.85; // Pleasant medium volume
+    audio.preload = "auto";
+    audio.src = this.primaryUrl;
+
+    let hasFallbackRun = false;
+
+    audio.onerror = () => {
+      if (!hasFallbackRun) {
+        hasFallbackRun = true;
+        audio.src = this.fallbackUrl;
+        audio.play().catch(() => {
+          sheikhAudioManager.playCompletionChime();
+          this.isReminderPlaying = false;
+          options?.onEnded?.();
+        });
+      } else {
+        sheikhAudioManager.playCompletionChime();
+        this.isReminderPlaying = false;
+        options?.onEnded?.();
+      }
+    };
+
+    audio.onended = () => {
+      this.isReminderPlaying = false;
+      options?.onEnded?.();
+    };
+
+    this.isReminderPlaying = true;
+    options?.onStart?.();
+
+    audio.load();
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn("Reminder playback attempt with primary audio:", err);
+        if (!hasFallbackRun) {
+          hasFallbackRun = true;
+          audio.src = this.fallbackUrl;
+          audio.play().catch(() => {
+            sheikhAudioManager.playCompletionChime();
+            this.isReminderPlaying = false;
+            options?.onEnded?.();
+          });
+        }
+      });
+    }
+  }
+
+  public stopReminder(): void {
+    if (this.reminderAudio) {
+      this.reminderAudio.pause();
+      this.reminderAudio.currentTime = 0;
+    }
+    this.isReminderPlaying = false;
+  }
+
+  public isPlaying(): boolean {
+    return this.isReminderPlaying;
+  }
+}
+
 export const sheikhAudioManager = new SheikhAudioManager();
+export const reminderAudioManager = new ReminderAudioManager();
+

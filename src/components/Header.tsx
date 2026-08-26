@@ -121,6 +121,22 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <button
+            id="nav-tab-reminder"
+            onClick={() => setActiveTab("reminder")}
+            className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === "reminder"
+                ? "bg-emerald-800/80 text-emerald-100 border border-emerald-500/50 shadow-sm"
+                : "text-stone-400 hover:text-stone-200 hover:bg-stone-800/50"
+            }`}
+          >
+            <span>🔊</span>
+            <span>التذكير الصوتي</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              تجريبي
+            </span>
+          </button>
+
+          <button
             id="nav-tab-sheikhs"
             onClick={() => setActiveTab("sheikhs")}
             className={`flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
