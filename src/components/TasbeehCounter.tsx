@@ -43,13 +43,49 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   onNavigateToShare,
   collectiveTotal,
 }) => {
-  const [count, setCount] = useState<number>(0);
+  // Load and persist active counter in localStorage so page reload preserves the count
+  const [count, setCount] = useState<number>(() => {
+    try {
+      const savedItemCount = localStorage.getItem(`tasbeeh_count_${selectedItem.id}`);
+      if (savedItemCount !== null) {
+        return parseInt(savedItemCount, 10) || 0;
+      }
+      const genericSaved = localStorage.getItem("current_tasbeeh_count");
+      return genericSaved ? parseInt(genericSaved, 10) || 0 : 0;
+    } catch (e) {
+      return 0;
+    }
+  });
+
   const [target, setTarget] = useState<number>(selectedItem.recommendedCount || 100);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [isPressed, setIsPressed] = useState<boolean>(false);
   const [showFinishedNotice, setShowFinishedNotice] = useState<boolean>(false);
 
   const targets = [33, 100, 500, 1000, 0]; // 0 for infinite
+
+  // Whenever formula changes, load its saved count
+  React.useEffect(() => {
+    try {
+      const savedItemCount = localStorage.getItem(`tasbeeh_count_${selectedItem.id}`);
+      if (savedItemCount !== null) {
+        setCount(parseInt(savedItemCount, 10) || 0);
+      }
+    } catch (e) {
+      // ignore
+    }
+    setTarget(selectedItem.recommendedCount || 100);
+  }, [selectedItem.id]);
+
+  // Persist count changes to localStorage
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(`tasbeeh_count_${selectedItem.id}`, count.toString());
+      localStorage.setItem("current_tasbeeh_count", count.toString());
+    } catch (e) {
+      // ignore
+    }
+  }, [count, selectedItem.id]);
 
   const handleIncrement = () => {
     setIsPressed(true);
@@ -85,6 +121,12 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   const handleReset = () => {
     setCount(0);
     setShowFinishedNotice(false);
+    try {
+      localStorage.setItem(`tasbeeh_count_${selectedItem.id}`, "0");
+      localStorage.setItem("current_tasbeeh_count", "0");
+    } catch (e) {
+      // ignore
+    }
   };
 
   const triggerConfetti = () => {
@@ -104,13 +146,11 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   const handlePrev = () => {
     const prevIdx = (currentIndex - 1 + collection.length) % collection.length;
     onSelectItem(collection[prevIdx]);
-    setCount(0);
   };
 
   const handleNext = () => {
     const nextIdx = (currentIndex + 1) % collection.length;
     onSelectItem(collection[nextIdx]);
-    setCount(0);
   };
 
   const matchedTrack = SHEIKH_AUDIO_TRACKS.find(

@@ -23,10 +23,21 @@ export default function App() {
     return saved ? parseInt(saved, 10) : 0;
   });
 
-  // Collective Live Website Stats (Real Genuine Counts)
-  const [siteStats, setSiteStats] = useState<SiteStats>({
-    visitorsCount: 1,
-    totalTasbeehat: 0,
+  // Collective Live Website Stats (Real Genuine Counts with local cache fallback)
+  const [siteStats, setSiteStats] = useState<SiteStats>(() => {
+    try {
+      const cachedVisitors = localStorage.getItem("site_cached_visitors");
+      const cachedTasbeehat = localStorage.getItem("site_cached_tasbeehat");
+      return {
+        visitorsCount: cachedVisitors ? Math.max(1, parseInt(cachedVisitors, 10)) : 1,
+        totalTasbeehat: cachedTasbeehat ? parseInt(cachedTasbeehat, 10) : 0,
+      };
+    } catch (e) {
+      return {
+        visitorsCount: 1,
+        totalTasbeehat: 0,
+      };
+    }
   });
 
   const [selectedSalawat, setSelectedSalawat] = useState<SalawatItem>(SALAWAT_COLLECTION[0]);
@@ -39,17 +50,33 @@ export default function App() {
   const [volume, setVolume] = useState<number>(1.0);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
 
+  // Cache siteStats in localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("site_cached_visitors", siteStats.visitorsCount.toString());
+      localStorage.setItem("site_cached_tasbeehat", siteStats.totalTasbeehat.toString());
+    } catch (e) {
+      // ignore
+    }
+  }, [siteStats]);
+
   // Initial visit registration & live real stats fetching + periodic polling
   useEffect(() => {
-    const fetchLiveStats = () => {
-      fetch("/api/stats")
-        .then((res) => res.json())
-        .then((data) => {
+    const fetchLiveStats = async () => {
+      try {
+        const res = await fetch("/api/stats");
+        if (res.ok) {
+          const data = await res.json();
           if (data && typeof data.visitorsCount === "number" && typeof data.totalTasbeehat === "number") {
-            setSiteStats(data);
+            setSiteStats((prev) => ({
+              visitorsCount: Math.max(prev.visitorsCount, data.visitorsCount),
+              totalTasbeehat: Math.max(prev.totalTasbeehat, data.totalTasbeehat),
+            }));
           }
-        })
-        .catch((e) => console.warn("Failed to fetch live stats:", e));
+        }
+      } catch (e) {
+        console.warn("Failed to fetch live stats:", e);
+      }
     };
 
     // 1. Fetch initial live stats immediately
@@ -69,13 +96,12 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ visitorId }),
       })
-        .then((res) => res.json())
+        .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data && typeof data.visitorsCount === "number") {
             setSiteStats((prev) => ({
-              ...prev,
-              visitorsCount: data.visitorsCount,
-              totalTasbeehat: data.totalTasbeehat ?? prev.totalTasbeehat,
+              visitorsCount: Math.max(prev.visitorsCount, data.visitorsCount),
+              totalTasbeehat: typeof data.totalTasbeehat === "number" ? Math.max(prev.totalTasbeehat, data.totalTasbeehat) : prev.totalTasbeehat,
             }));
             sessionStorage.setItem("has_registered_visit", "true");
           }
@@ -83,15 +109,19 @@ export default function App() {
         .catch((e) => console.warn("Failed to register visit:", e));
     }
 
-    // 3. Periodic polling every 10 seconds to keep live collective count synced across users
-    const pollInterval = setInterval(fetchLiveStats, 10000);
+    // 3. Periodic polling every 6 seconds to keep live collective count synced across users
+    const pollInterval = setInterval(fetchLiveStats, 6000);
 
     return () => clearInterval(pollInterval);
   }, []);
 
   // Save personal salawat count to localStorage
   useEffect(() => {
-    localStorage.setItem("personal_salawat_count", personalSalawat.toString());
+    try {
+      localStorage.setItem("personal_salawat_count", personalSalawat.toString());
+    } catch (e) {
+      // ignore
+    }
   }, [personalSalawat]);
 
   // Handle Increment (both personal and sync collective tasbeeh to server)
@@ -102,18 +132,19 @@ export default function App() {
       totalTasbeehat: prev.totalTasbeehat + 1,
     }));
 
-    // Debounced or direct call to backend
+    // Send increment to backend
     fetch("/api/stats/tasbeeh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ count: 1 }),
     })
-      .then((res) => res.json())
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && typeof data.totalTasbeehat === "number") {
           setSiteStats((prev) => ({
             ...prev,
-            totalTasbeehat: data.totalTasbeehat,
+            totalTasbeehat: Math.max(prev.totalTasbeehat, data.totalTasbeehat),
+            visitorsCount: typeof data.visitorsCount === "number" ? Math.max(prev.visitorsCount, data.visitorsCount) : prev.visitorsCount,
           }));
         }
       })
