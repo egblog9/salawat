@@ -7,7 +7,6 @@ import {
   Volume2,
   VolumeX,
   RotateCcw,
-  Sparkles,
   CheckCircle2,
   Play,
   Share2,
@@ -214,7 +213,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
             <p className="leading-relaxed font-amiri">{selectedItem.meaning}</p>
           </div>
           <div className="bg-stone-950/60 rounded-2xl p-3.5 border border-stone-800/60">
-            <span className="text-amber-300 font-bold block mb-1">✨ الفضل والبركة:</span>
+            <span className="text-amber-300 font-bold block mb-1">🌿 الفضل والبركة:</span>
             <p className="leading-relaxed font-amiri">{selectedItem.virtue}</p>
           </div>
         </div>
@@ -358,7 +357,7 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
           {/* Completion Celebration Message */}
           {showFinishedNotice && (
             <div className="mt-4 p-3 rounded-2xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xl animate-bounce">
-              <Sparkles className="w-5 h-5 text-amber-400" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               <span>هنيئاً لك! أتممت الورد بنجاح، تقبل الله صالح أعمالك وزادك قرباً وبركة.</span>
             </div>
           )}

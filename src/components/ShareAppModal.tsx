@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Share2, Copy, Check, X, Smartphone, MessageCircle, Send, Sparkles } from "lucide-react";
+import { Share2, Copy, Check, X, Smartphone, MessageCircle, Send, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface ShareAppModalProps {
@@ -93,8 +93,7 @@ ${getShareUrl()}`;
             </div>
             <div>
               <h3 className="text-xl font-bold font-tajawal text-stone-100 flex items-center gap-1.5">
-                <span>مشاركة التطبيق</span>
-                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>مشاركة التطبيق 📲</span>
               </h3>
               <p className="text-xs text-emerald-400 font-medium">
                 اجعله صدقة جارية لك ولكل من يصلي على الحبيب ﷺ

@@ -5,7 +5,6 @@ import {
   Share2,
   Copy,
   Check,
-  Sparkles,
   Send,
   MessageCircle,
   Clock,
@@ -13,6 +12,7 @@ import {
   Volume2,
   ExternalLink,
   Facebook,
+  BookOpen,
 } from "lucide-react";
 
 interface ShareReminderProps {
@@ -226,13 +226,13 @@ export const ShareReminder: React.FC<ShareReminderProps> = ({ onPlaySheikhTrack 
         </div>
       </div>
 
-      {/* AI Smart Reminder Card Generator */}
+      {/* Reminder Card Generator */}
       <div className="bg-stone-900/90 border border-stone-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-base sm:text-lg text-amber-200 font-amiri flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-amber-400" />
-              <span>توليد بطاقة تذكير ذكية مخصصة</span>
+              <BookOpen className="w-5 h-5 text-amber-400" />
+              <span>توليد بطاقة تذكير مباركة مخصصة</span>
             </h3>
             <p className="text-xs text-stone-300">
               اختر موضوع البطاقة لتوليد نص ديني متقن وحديث نبوي شريف مع صياغة مؤثرة للمشاركة.

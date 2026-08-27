@@ -7,7 +7,6 @@ import {
   Play,
   Pause,
   Repeat,
-  Sparkles,
   Heart,
   Share2,
   Bookmark,
@@ -268,7 +267,7 @@ export const SheikhAudioStudio: React.FC<SheikhAudioStudioProps> = ({
                 : "bg-stone-950/60 border-stone-800 hover:border-stone-700 text-stone-300"
             }`}
           >
-            <div className="text-xl mb-1">🌟</div>
+            <div className="text-xl mb-1">🕌</div>
             <span className="font-bold text-xs sm:text-sm">جميع الشيوخ والقراء</span>
             <span className="text-[10px] text-stone-400">كافة التسجيلات</span>
           </button>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Download, X, Smartphone, Sparkles } from "lucide-react";
+import { Download, X, Smartphone } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -111,8 +111,7 @@ export const InstallPwaPrompt: React.FC = () => {
             <div className="flex-1 min-w-0 text-right">
               <div className="flex items-center justify-between gap-1">
                 <h4 className="font-bold text-sm text-stone-100 flex items-center gap-1.5 font-tajawal">
-                  <span>تثبيت تطبيق صَلَوَات</span>
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>تثبيت تطبيق صَلَوَات 📲</span>
                 </h4>
                 <button
                   onClick={handleDismiss}

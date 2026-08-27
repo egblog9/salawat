@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { VIRTUES_LIST, SHEIKH_AUDIO_TRACKS } from "../data/salawatData";
 import { SheikhAudioTrack } from "../types";
-import { Volume2, Share2, Check, Copy, BookOpen, Sparkles, Heart } from "lucide-react";
+import { Volume2, Share2, Check, Copy, BookOpen, Heart } from "lucide-react";
 
 interface VirtuesSectionProps {
   onPlaySheikhTrack: (track: SheikhAudioTrack) => void;
@@ -42,7 +42,7 @@ export const VirtuesSection: React.FC<VirtuesSectionProps> = ({
         {VIRTUES_LIST.map((v, idx) => {
           const matchedTrack = SHEIKH_AUDIO_TRACKS.find((t) => t.id === v.sheikhTrackId) || SHEIKH_AUDIO_TRACKS[0];
           const isPlayingThis = isPlaying && activePlayingId === matchedTrack.id;
-          const shareText = `✨ ${v.title} ✨\n\nقال رسول الله ﷺ: ${v.hadith}\n(${v.narrator})\n\n🌿 الفائدة: ${v.benefit}\n\nاللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ 🤍\nتواصل معنا: https://www.facebook.com/share/1Bm2aq9mKm/`;
+          const shareText = `🌿 ${v.title} 🌿\n\nقال رسول الله ﷺ: ${v.hadith}\n(${v.narrator})\n\n🤍 الفائدة: ${v.benefit}\n\nاللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ 🤍\nتواصل معنا: https://www.facebook.com/share/1Bm2aq9mKm/`;
 
           return (
             <div

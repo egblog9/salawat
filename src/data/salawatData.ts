@@ -3,22 +3,22 @@ import { SalawatItem, SheikhReciter, SheikhAudioTrack, ReminderVoiceFormula } fr
 export const REMINDER_VOICE_FORMULAS: ReminderVoiceFormula[] = [
   {
     id: "salli_ala_muhammad",
-    name: "صَلِّ عَلَى مُحَمَّد",
+    name: "صَلِّ عَلَى مُحَمَّد (الشيخ مشاري راشد العفاسي)",
     shortName: "صَلِّ عَلَى مُحَمَّد",
     arabicText: "«صَلِّ عَلَى مُحَمَّد ﷺ»",
     audioPath: "/audio/salawat-reminder.mp3",
     fallbackAyahUrl: "https://everyayah.com/data/Alafasy_128kbps/033056.mp3",
-    description: "صيغة مقتضبة، خفيفة وواضحة جداً بالصلاة على الحبيب محمد ﷺ",
+    description: "تلاوة قرآنية ندية بصوت فضيلة الشيخ مشاري بن راشد العفاسي",
     ttsText: "صلّ على محمد",
   },
   {
     id: "allahumma_salli_wasallim",
-    name: "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّد",
+    name: "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّد (الشيخ ماهر المعيقلي)",
     shortName: "اللهم صلِّ وسلِّم على نبينا محمد",
     arabicText: "«اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ ﷺ»",
     audioPath: "/audio/salawat-formula-2.mp3",
     fallbackAyahUrl: "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3",
-    description: "صيغة جامعة مأثورة بالصلاة والتسليم والبركة على نبينا محمد ﷺ",
+    description: "تلاوة خاشعة بصوت فضيلة الشيخ ماهر بن حمد المعيقلي من الحرم المكي",
     ttsText: "اللهم صلّ وسلّم وبارك على نبينا محمد",
   },
 ];
@@ -61,7 +61,7 @@ export const SHEIKH_RECITERS: SheikhReciter[] = [
     name: "الشيخ ياسر بن راشد الدوسري",
     title: "إمام وخطيب المسجد الحرام بمكة المكرمة",
     country: "المملكة العربية السعودية",
-    avatar: "✨",
+    avatar: "📿",
     description: "تلاوة تصدح بالقوة والخشوع والتأثير البالغ في صيغ الصلاة على النبي والأدعية المأثورة.",
   },
   {
@@ -93,7 +93,7 @@ export const SHEIKH_RECITERS: SheikhReciter[] = [
     name: "الشيخ عبد الباسط عبد الصمد",
     title: "صوت مكة الخالد وسفير القرآن الكريم",
     country: "مصر",
-    avatar: "🌟",
+    avatar: "🎙️",
     description: "حنجرة ذهبية فريدة تأسر القلوب وتسمو بالروح في ذكر الصلاة على النبي ﷺ.",
   },
   {
@@ -348,7 +348,7 @@ export const SHARING_PRESETS = [
   {
     id: "general-reminder",
     title: "تذكير طيب بالصلاة على النبي ﷺ",
-    text: "✨ تذكير مبارك ✨\n\nقال رسول الله ﷺ: «مَنْ صَلَّى عَلَيَّ صَلَاةً صَلَّى اللَّهُ عَلَيْهِ بِهَا عَشْرًا»\n\nاللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى سَيِّدِنَا وَنَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِينَ 🌿\n\nلا تنسَ أن تُصلي على النبي ﷺ وتُذكّر غيرك ليشارِكك الأجر! 🤍\n\nتواصل معنا عبر فيسبوك: https://www.facebook.com/share/1Bm2aq9mKm/",
+    text: "🌿 تذكير مبارك 🌿\n\nقال رسول الله ﷺ: «مَنْ صَلَّى عَلَيَّ صَلَاةً صَلَّى اللَّهُ عَلَيْهِ بِهَا عَشْرًا»\n\nاللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى سَيِّدِنَا وَنَبِيِّنَا مُحَمَّدٍ وَعَلَى آلِهِ وَصَحْبِهِ أَجْمَعِينَ 🌿\n\nلا تنسَ أن تُصلي على النبي ﷺ وتُذكّر غيرك ليشارِكك الأجر! 🤍\n\nتواصل معنا عبر فيسبوك: https://www.facebook.com/share/1Bm2aq9mKm/",
     tag: "تذكير_عام"
   },
   {

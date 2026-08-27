@@ -6,7 +6,6 @@ import {
   Clock,
   Play,
   Check,
-  Sparkles,
   Info,
   ShieldCheck,
   Smartphone,
@@ -15,6 +14,7 @@ import {
   BellRing,
   Music,
   Radio,
+  Heart,
 } from "lucide-react";
 import { REMINDER_VOICE_FORMULAS } from "../data/salawatData";
 import { ReminderVoiceFormula } from "../types";
@@ -334,7 +334,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
 
             {/* Background reminder mode tip */}
             <div className="p-3.5 rounded-2xl bg-emerald-950/40 border border-emerald-800/40 flex items-start gap-2.5 text-xs text-stone-300">
-              <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-emerald-300 block mb-0.5">
                   التذكير في الخلفية:
@@ -501,11 +501,11 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                   <div className="text-[11px] text-stone-400">{currentFormula.arabicText}</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800 text-stone-300">
-                  <div className="font-bold text-emerald-400 mb-0.5">✨ شارك التطبيق صدقة جارية</div>
+                  <div className="font-bold text-emerald-400 mb-0.5">🤍 شارك التطبيق صدقة جارية</div>
                   <div className="text-[11px] text-stone-400">الدال على الخير كفاعله، انشر التطبيق واكسب الأجر</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800 text-stone-300">
-                  <div className="font-bold text-amber-200 mb-0.5">🤍 عطر لسانك بالصلاة على الحبيب</div>
+                  <div className="font-bold text-amber-200 mb-0.5">🤲 عطر لسانك بالصلاة على الحبيب</div>
                   <div className="text-[11px] text-stone-400">من صلى عليّ صلاة صلى الله عليه بها عشراً</div>
                 </div>
               </div>
@@ -536,7 +536,6 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
           <div>
             <h3 className="text-base sm:text-lg font-bold text-stone-100 font-tajawal flex items-center gap-1.5">
               <span>انشر التطبيق ليكون صدقة جارية لك 📲</span>
-              <Sparkles className="w-4 h-4 text-amber-400" />
             </h3>
             <p className="text-xs text-stone-300 mt-0.5">
               عند مشاركة التطبيق، يتثبت كبرنامج مستقل على هاتف أي شخص مجاناً وبدون إعلانات.

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Volume2, VolumeX, X, Heart, Sparkles } from "lucide-react";
+import { Volume2, VolumeX, X, Heart, CheckCircle2 } from "lucide-react";
 
 interface ReminderToastProps {
   isVisible: boolean;
@@ -72,7 +72,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                   )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-stone-900 border border-amber-400 flex items-center justify-center text-[10px]">
-                  ✨
+                  🌿
                 </div>
               </div>
 
@@ -80,7 +80,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
               <div className="flex-1 text-right min-w-0 pr-1">
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <Heart className="w-3 h-3 text-amber-400 fill-amber-400" />
                     <span>تذكير الصلاة على النبي</span>
                   </span>
                   
@@ -112,7 +112,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                       }}
                       className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow active:scale-95 cursor-pointer"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>صلِّ عليه الآن (+1 تسبيحة)</span>
                     </button>
                   </div>

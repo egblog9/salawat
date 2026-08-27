@@ -12,12 +12,12 @@ export const ISLAMIC_NOTIFICATIONS: IslamicNotificationMessage[] = [
     category: "salawat",
   },
   {
-    title: "✨ شارك التطبيق واجعله صدقة جارية",
+    title: "🤍 شارك التطبيق واجعله صدقة جارية",
     body: "الدال على الخير كفاعله، شارك تطبيق صلوات مع أحبابك لتنال أجر كل من صلى على النبي ﷺ",
     category: "share",
   },
   {
-    title: "🤍 عطر لسانك بالصلاة على الحبيب",
+    title: "🤲 عطر لسانك بالصلاة على الحبيب",
     body: "قال رسول الله ﷺ: «مَنْ صَلَّى عَلَيَّ صَلَاةً صَلَّى اللَّهُ عَلَيْهِ بِهَا عَشْرًا»",
     category: "virtue",
   },
@@ -27,7 +27,7 @@ export const ISLAMIC_NOTIFICATIONS: IslamicNotificationMessage[] = [
     category: "salawat",
   },
   {
-    title: "🌟 صدقة جارية لك ولوالديك",
+    title: "🌿 صدقة جارية لك ولوالديك",
     body: "انشر تطبيق «صلوات» لمن تحب وكن سبباً في إحياء سنة الصلاة على النبي ﷺ",
     category: "share",
   },
