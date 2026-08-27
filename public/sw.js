@@ -1,12 +1,13 @@
 // Salawat PWA Service Worker
-const CACHE_NAME = "salawat-v2";
+const CACHE_NAME = "salawat-v3";
 const PRECACHE_ASSETS = [
   "/",
   "/index.html",
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/audio/salawat-reminder.mp3"
+  "/audio/salawat-reminder.mp3",
+  "/audio/salawat-formula-2.mp3"
 ];
 
 // Install: Cache critical static assets immediately
@@ -78,3 +79,24 @@ self.addEventListener("fetch", (event) => {
       })
   );
 });
+
+// Notification Click Handler: Focus or open the app when clicking system notifications
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+  
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+

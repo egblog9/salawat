@@ -33,6 +33,17 @@ export interface SalawatItem {
   sheikhTrackId?: string;
 }
 
+export interface ReminderVoiceFormula {
+  id: "salli_ala_muhammad" | "allahumma_salli_wasallim";
+  name: string;
+  shortName: string;
+  arabicText: string;
+  audioPath: string;
+  fallbackAyahUrl: string;
+  description: string;
+  ttsText: string;
+}
+
 export interface SiteStats {
   visitorsCount: number;
   totalTasbeehat: number;

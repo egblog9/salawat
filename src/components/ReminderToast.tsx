@@ -7,6 +7,7 @@ interface ReminderToastProps {
   onClose: () => void;
   isMuted: boolean;
   onQuickTasbeeh?: () => void;
+  arabicText?: string;
 }
 
 export const ReminderToast: React.FC<ReminderToastProps> = ({
@@ -14,6 +15,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
   onClose,
   isMuted,
   onQuickTasbeeh,
+  arabicText = "اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا وَحَبِيبِنَا مُحَمَّدٍ ﷺ",
 }) => {
   const [progress, setProgress] = useState(100);
   const DURATION_MS = 7000;
@@ -97,7 +99,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                 </h3>
 
                 <p className="text-xs sm:text-sm font-amiri text-stone-200 mt-1 font-semibold leading-relaxed">
-                  اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا وَحَبِيبِنَا مُحَمَّدٍ ﷺ
+                  {arabicText}
                 </p>
 
                 {/* Action button */}

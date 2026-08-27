@@ -100,9 +100,9 @@ export const InstallPwaPrompt: React.FC = () => {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
-        className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-40"
+        className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-[70]"
       >
-        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-950 via-stone-900 to-stone-900 border border-emerald-500/50 rounded-2xl p-4 shadow-2xl backdrop-blur-xl text-stone-100 ring-2 ring-emerald-500/20">
+        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-950 via-stone-900 to-stone-900 border-2 border-emerald-400/60 rounded-2xl p-4 shadow-2xl backdrop-blur-xl text-stone-100 ring-4 ring-emerald-500/30">
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-amber-500 flex items-center justify-center text-stone-950 shadow-md flex-shrink-0">
               <Smartphone className="w-6 h-6" />

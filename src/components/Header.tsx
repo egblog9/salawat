@@ -1,5 +1,5 @@
 import React from "react";
-import { Heart, BellRing, Users } from "lucide-react";
+import { Heart, BellRing, Users, Share2, Download } from "lucide-react";
 import { SiteStats } from "../types";
 
 interface HeaderProps {
@@ -8,6 +8,10 @@ interface HeaderProps {
   totalSalawat: number;
   siteStats: SiteStats;
   isPlaying: boolean;
+  onOpenShareModal?: () => void;
+  onOpenInstallModal?: () => void;
+  canInstall?: boolean;
+  isStandalone?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +20,10 @@ export const Header: React.FC<HeaderProps> = ({
   totalSalawat,
   siteStats,
   isPlaying,
+  onOpenShareModal,
+  onOpenInstallModal,
+  canInstall,
+  isStandalone = false,
 }) => {
   return (
     <header className="relative border-b border-emerald-900/40 bg-gradient-to-b from-stone-900/95 via-stone-900/80 to-stone-950/90 backdrop-blur-md sticky top-0 z-40">
@@ -53,17 +61,30 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {/* Facebook icon on mobile top bar */}
-            <a
-              href="https://www.facebook.com/share/1Bm2aq9mKm/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow transition-all flex-shrink-0"
-              title="صفحة الفيسبوك"
-            >
-              <span className="font-bold">f</span>
-              <span className="text-[11px]">فيسبوك</span>
-            </a>
+            {/* Quick Action buttons on mobile top bar - Share App visible when installed */}
+            <div className="md:hidden flex items-center gap-1.5 flex-shrink-0">
+              {isStandalone && (
+                <button
+                  id="mobile-header-share-app-btn"
+                  onClick={onOpenShareModal}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-amber-600 hover:from-emerald-500 hover:to-amber-500 text-stone-950 font-bold text-xs shadow transition-all cursor-pointer animate-in fade-in"
+                  title="مشاركة التطبيق المثبت"
+                >
+                  <Share2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span className="text-[11px]">مشاركة التطبيق</span>
+                </button>
+              )}
+
+              <a
+                href="https://www.facebook.com/share/1Bm2aq9mKm/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow transition-all"
+                title="صفحة الفيسبوك"
+              >
+                <span className="font-bold">f</span>
+              </a>
+            </div>
           </div>
 
           {/* Live Collective Stats & Action Buttons */}
@@ -90,6 +111,19 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Share App Action (Desktop) - Shown when installed as app */}
+            {isStandalone && (
+              <button
+                id="header-share-app-btn"
+                onClick={onOpenShareModal}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-amber-600 hover:from-emerald-500 hover:to-amber-500 text-stone-950 font-bold text-xs shadow-md transition-all active:scale-95 flex-shrink-0 cursor-pointer animate-in fade-in"
+                title="مشاركة التطبيق المثبت"
+              >
+                <Share2 className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>مشاركة التطبيق</span>
+              </button>
+            )}
 
             {/* Facebook Link (Desktop) */}
             <a

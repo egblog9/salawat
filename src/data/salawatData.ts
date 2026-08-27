@@ -1,4 +1,27 @@
-import { SalawatItem, SheikhReciter, SheikhAudioTrack } from "../types";
+import { SalawatItem, SheikhReciter, SheikhAudioTrack, ReminderVoiceFormula } from "../types";
+
+export const REMINDER_VOICE_FORMULAS: ReminderVoiceFormula[] = [
+  {
+    id: "salli_ala_muhammad",
+    name: "صَلِّ عَلَى مُحَمَّد",
+    shortName: "صَلِّ عَلَى مُحَمَّد",
+    arabicText: "«صَلِّ عَلَى مُحَمَّد ﷺ»",
+    audioPath: "/audio/salawat-reminder.mp3",
+    fallbackAyahUrl: "https://everyayah.com/data/Alafasy_128kbps/033056.mp3",
+    description: "صيغة مقتضبة، خفيفة وواضحة جداً بالصلاة على الحبيب محمد ﷺ",
+    ttsText: "صلّ على محمد",
+  },
+  {
+    id: "allahumma_salli_wasallim",
+    name: "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّد",
+    shortName: "اللهم صلِّ وسلِّم على نبينا محمد",
+    arabicText: "«اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا مُحَمَّدٍ ﷺ»",
+    audioPath: "/audio/salawat-formula-2.mp3",
+    fallbackAyahUrl: "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3",
+    description: "صيغة جامعة مأثورة بالصلاة والتسليم والبركة على نبينا محمد ﷺ",
+    ttsText: "اللهم صلّ وسلّم وبارك على نبينا محمد",
+  },
+];
 
 export const SHEIKH_RECITERS: SheikhReciter[] = [
   {

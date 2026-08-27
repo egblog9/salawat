@@ -267,16 +267,28 @@ class SheikhAudioManager {
 class ReminderAudioManager {
   private reminderAudio: HTMLAudioElement | null = null;
   private isReminderPlaying: boolean = false;
+  private currentFormulaId: "salli_ala_muhammad" | "allahumma_salli_wasallim" = "salli_ala_muhammad";
   private primaryUrl = "/audio/salawat-reminder.mp3";
   private fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
 
+  public setFormula(formulaId: "salli_ala_muhammad" | "allahumma_salli_wasallim"): void {
+    this.currentFormulaId = formulaId;
+    if (formulaId === "allahumma_salli_wasallim") {
+      this.primaryUrl = "/audio/salawat-formula-2.mp3";
+      this.fallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
+    } else {
+      this.primaryUrl = "/audio/salawat-reminder.mp3";
+      this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+    }
+  }
+
   // Pre-unlock audio on user click to comply with browser autoplay policies
-  public unlockAudio(): void {
+  public unlockAudio(url?: string): void {
     try {
       if (!this.reminderAudio) {
         this.reminderAudio = new Audio();
       }
-      this.reminderAudio.src = this.primaryUrl;
+      this.reminderAudio.src = url || this.primaryUrl;
       this.reminderAudio.volume = 0.01;
       this.reminderAudio.load();
       const p = this.reminderAudio.play();
@@ -294,8 +306,51 @@ class ReminderAudioManager {
     }
   }
 
+  // Play Arabic Speech Synthesis if needed
+  private playArabicTTS(text: string, onEnded?: () => void) {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "ar-SA";
+        utterance.rate = 0.85;
+        utterance.pitch = 1.0;
+        utterance.volume = 0.9;
+        
+        // Find best Arabic voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const arabicVoice = voices.find((v) => v.lang.startsWith("ar"));
+        if (arabicVoice) {
+          utterance.voice = arabicVoice;
+        }
+
+        utterance.onend = () => {
+          this.isReminderPlaying = false;
+          onEnded?.();
+        };
+        utterance.onerror = () => {
+          sheikhAudioManager.playCompletionChime();
+          this.isReminderPlaying = false;
+          onEnded?.();
+        };
+
+        window.speechSynthesis.speak(utterance);
+        return;
+      } catch (e) {
+        console.warn("TTS failed:", e);
+      }
+    }
+    sheikhAudioManager.playCompletionChime();
+    this.isReminderPlaying = false;
+    onEnded?.();
+  }
+
   public playReminder(options?: {
     isMuted?: boolean;
+    formulaId?: "salli_ala_muhammad" | "allahumma_salli_wasallim";
+    audioUrl?: string;
+    fallbackUrl?: string;
+    ttsText?: string;
     onStart?: () => void;
     onEnded?: () => void;
   }): void {
@@ -307,6 +362,10 @@ class ReminderAudioManager {
       return;
     }
 
+    if (options?.formulaId) {
+      this.setFormula(options.formulaId);
+    }
+
     if (!this.reminderAudio) {
       this.reminderAudio = new Audio();
     }
@@ -316,23 +375,34 @@ class ReminderAudioManager {
     audio.currentTime = 0;
     audio.volume = 0.85; // Pleasant medium volume
     audio.preload = "auto";
-    audio.src = this.primaryUrl;
+    
+    let targetUrl = options?.audioUrl || this.primaryUrl;
+    let secondaryFallbackUrl = options?.fallbackUrl || this.fallbackUrl;
+    let ttsText = options?.ttsText || (this.currentFormulaId === "allahumma_salli_wasallim" ? "اللهم صلّ وسلّم وبارك على نبينا محمد" : "صلّ على محمد");
+
+    if (options?.formulaId === "allahumma_salli_wasallim") {
+      targetUrl = "/audio/salawat-formula-2.mp3";
+      secondaryFallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
+      ttsText = "اللهم صلّ وسلّم وبارك على نبينا محمد";
+    } else if (options?.formulaId === "salli_ala_muhammad") {
+      targetUrl = "/audio/salawat-reminder.mp3";
+      secondaryFallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+      ttsText = "صلّ على محمد";
+    }
+
+    audio.src = targetUrl;
 
     let hasFallbackRun = false;
 
     audio.onerror = () => {
-      if (!hasFallbackRun) {
+      if (!hasFallbackRun && secondaryFallbackUrl && secondaryFallbackUrl !== targetUrl) {
         hasFallbackRun = true;
-        audio.src = this.fallbackUrl;
+        audio.src = secondaryFallbackUrl;
         audio.play().catch(() => {
-          sheikhAudioManager.playCompletionChime();
-          this.isReminderPlaying = false;
-          options?.onEnded?.();
+          this.playArabicTTS(ttsText, options?.onEnded);
         });
       } else {
-        sheikhAudioManager.playCompletionChime();
-        this.isReminderPlaying = false;
-        options?.onEnded?.();
+        this.playArabicTTS(ttsText, options?.onEnded);
       }
     };
 
@@ -348,15 +418,15 @@ class ReminderAudioManager {
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn("Reminder playback attempt with primary audio:", err);
-        if (!hasFallbackRun) {
+        console.warn("Reminder playback attempt with target audio:", err);
+        if (!hasFallbackRun && secondaryFallbackUrl && secondaryFallbackUrl !== targetUrl) {
           hasFallbackRun = true;
-          audio.src = this.fallbackUrl;
+          audio.src = secondaryFallbackUrl;
           audio.play().catch(() => {
-            sheikhAudioManager.playCompletionChime();
-            this.isReminderPlaying = false;
-            options?.onEnded?.();
+            this.playArabicTTS(ttsText, options?.onEnded);
           });
+        } else {
+          this.playArabicTTS(ttsText, options?.onEnded);
         }
       });
     }
@@ -366,6 +436,11 @@ class ReminderAudioManager {
     if (this.reminderAudio) {
       this.reminderAudio.pause();
       this.reminderAudio.currentTime = 0;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
     }
     this.isReminderPlaying = false;
   }

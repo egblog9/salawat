@@ -8,17 +8,50 @@ import { AudioFloatingBar } from "./components/AudioFloatingBar";
 import { AudioReminderCard } from "./components/AudioReminderCard";
 import { ReminderToast } from "./components/ReminderToast";
 import { InstallPwaPrompt } from "./components/InstallPwaPrompt";
-import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS } from "./data/salawatData";
+import { ShareAppModal } from "./components/ShareAppModal";
+import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS, REMINDER_VOICE_FORMULAS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats } from "./types";
 import { sheikhAudioManager, reminderAudioManager } from "./utils/audio";
+import { systemNotificationManager } from "./utils/systemNotifications";
 import {
   Heart,
   Users,
   ExternalLink,
+  Share2,
 } from "lucide-react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>("tasbeeh");
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+
+  // Standalone installed PWA mode detection
+  const [isStandalone, setIsStandalone] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      // @ts-expect-error navigator standalone for iOS safari
+      window.navigator.standalone === true
+    );
+  });
+
+  useEffect(() => {
+    const checkStandalone = () => {
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        // @ts-expect-error navigator standalone for iOS safari
+        window.navigator.standalone === true;
+      setIsStandalone(standalone);
+    };
+
+    window.addEventListener("appinstalled", checkStandalone);
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
+    mediaQuery.addEventListener("change", checkStandalone);
+
+    return () => {
+      window.removeEventListener("appinstalled", checkStandalone);
+      mediaQuery.removeEventListener("change", checkStandalone);
+    };
+  }, []);
 
   // Local user's personal lifetime tasbeeh counter
   const [personalSalawat, setPersonalSalawat] = useState<number>(() => {
@@ -53,6 +86,19 @@ export default function App() {
   const [volume, setVolume] = useState<number>(1.0);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
 
+  // Voice Reminder Selected Formula State (صيغة الصوت: "صلي على محمد" أو "اللهم صلي وسلم على نبينا محمد")
+  const [selectedFormulaId, setSelectedFormulaId] = useState<"salli_ala_muhammad" | "allahumma_salli_wasallim">(() => {
+    try {
+      const saved = localStorage.getItem("reminderVoiceFormulaId");
+      if (saved === "salli_ala_muhammad" || saved === "allahumma_salli_wasallim") {
+        return saved;
+      }
+      return "salli_ala_muhammad";
+    } catch (e) {
+      return "salli_ala_muhammad";
+    }
+  });
+
   // Voice Reminder (التذكير الصوتي) State
   const [soundReminderEnabled, setSoundReminderEnabled] = useState<boolean>(() => {
     try {
@@ -83,6 +129,40 @@ export default function App() {
   const [isTestingSound, setIsTestingSound] = useState<boolean>(false);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(() => soundReminderInterval * 60);
 
+  // System Push Notifications (إشعارات شريط الهاتف والنظام) State
+  const [systemNotificationsEnabled, setSystemNotificationsEnabled] = useState<boolean>(() => {
+    try {
+      return (
+        systemNotificationManager.isSupported() &&
+        localStorage.getItem("systemNotificationsEnabled") === "true" &&
+        systemNotificationManager.getPermissionStatus() === "granted"
+      );
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [systemNotificationInterval, setSystemNotificationInterval] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("systemNotificationInterval");
+      return saved ? parseInt(saved, 10) || 30 : 30;
+    } catch (e) {
+      return 30;
+    }
+  });
+
+  const [isTestingNotification, setIsTestingNotification] = useState<boolean>(false);
+
+  // Save selected formula to localStorage and audio manager
+  useEffect(() => {
+    try {
+      localStorage.setItem("reminderVoiceFormulaId", selectedFormulaId);
+      reminderAudioManager.setFormula(selectedFormulaId);
+    } catch (e) {
+      // ignore
+    }
+  }, [selectedFormulaId]);
+
   // Sync Voice Reminder Preferences to localStorage
   useEffect(() => {
     try {
@@ -94,7 +174,64 @@ export default function App() {
     }
   }, [soundReminderEnabled, soundReminderInterval, soundMuted]);
 
-  // Robust Voice Reminder Timer System (Handles tab visibility & prevents duplicate timers/blasts)
+  // Sync System Notification Preferences to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("systemNotificationsEnabled", systemNotificationsEnabled.toString());
+      localStorage.setItem("systemNotificationInterval", systemNotificationInterval.toString());
+    } catch (e) {
+      // ignore
+    }
+  }, [systemNotificationsEnabled, systemNotificationInterval]);
+
+  // Periodic System Notification Loop (Runs when user enables phone shade notifications)
+  useEffect(() => {
+    if (!systemNotificationsEnabled || !systemNotificationManager.isSupported()) {
+      return;
+    }
+
+    const intervalMs = systemNotificationInterval * 60 * 1000;
+    const intervalId = setInterval(async () => {
+      await systemNotificationManager.sendNotification();
+    }, intervalMs);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [systemNotificationsEnabled, systemNotificationInterval]);
+
+  // Handle System Notifications Toggle
+  const handleToggleSystemNotifications = async (enabled: boolean) => {
+    if (enabled) {
+      const granted = await systemNotificationManager.requestPermission();
+      if (granted) {
+        setSystemNotificationsEnabled(true);
+        // Send a welcoming confirmation notification to device shade
+        await systemNotificationManager.sendCustomNotification(
+          "🌿 تم تفعيل إشعارات صلوات",
+          "ستصلك تذكيرات بالصلاة على النبي ﷺ والصدقة الجارية على فترات بإذن الله 📲"
+        );
+      } else {
+        setSystemNotificationsEnabled(false);
+      }
+    } else {
+      setSystemNotificationsEnabled(false);
+    }
+  };
+
+  const handleChangeSystemNotificationInterval = (mins: number) => {
+    setSystemNotificationInterval(mins);
+  };
+
+  const handleSendTestSystemNotification = async () => {
+    setIsTestingNotification(true);
+    await systemNotificationManager.sendNotification();
+    setTimeout(() => {
+      setIsTestingNotification(false);
+    }, 1500);
+  };
+
+  // Robust Voice Reminder Timer System (Handles interval & plays chosen voice formula)
   useEffect(() => {
     if (!soundReminderEnabled) {
       reminderAudioManager.stopReminder();
@@ -115,9 +252,15 @@ export default function App() {
         setShowReminderToast(true);
         reminderAudioManager.playReminder({
           isMuted: soundMuted,
+          formulaId: selectedFormulaId,
           onStart: () => {},
           onEnded: () => {},
         });
+
+        // Also if system notifications are enabled, ping the notification shade
+        if (systemNotificationsEnabled) {
+          systemNotificationManager.sendNotification();
+        }
 
         // Set next trigger cleanly
         nextTriggerTimestamp = Date.now() + soundReminderInterval * 60 * 1000;
@@ -128,7 +271,7 @@ export default function App() {
     return () => {
       clearInterval(intervalId);
     };
-  }, [soundReminderEnabled, soundReminderInterval, soundMuted]);
+  }, [soundReminderEnabled, soundReminderInterval, soundMuted, selectedFormulaId, systemNotificationsEnabled]);
 
   // Toggle Reminder Activation
   const handleToggleReminder = (enabled: boolean) => {
@@ -152,11 +295,13 @@ export default function App() {
   };
 
   // Test Sound
-  const handleTestReminderSound = () => {
+  const handleTestReminderSound = (formulaIdToTest?: "salli_ala_muhammad" | "allahumma_salli_wasallim") => {
+    const targetId = formulaIdToTest || selectedFormulaId;
     setIsTestingSound(true);
     setShowReminderToast(true);
     reminderAudioManager.playReminder({
       isMuted: false, // In test mode, always play audio so user can preview it
+      formulaId: targetId,
       onStart: () => setIsTestingSound(true),
       onEnded: () => setIsTestingSound(false),
     });
@@ -165,6 +310,7 @@ export default function App() {
       setIsTestingSound(false);
     }, 4500);
   };
+
 
 
   // Cache siteStats in localStorage
@@ -332,6 +478,16 @@ export default function App() {
         onClose={() => setShowReminderToast(false)}
         isMuted={soundMuted}
         onQuickTasbeeh={handleIncrementTasbeeh}
+        arabicText={
+          REMINDER_VOICE_FORMULAS.find((f) => f.id === selectedFormulaId)?.arabicText ||
+          "«صَلِّ عَلَى مُحَمَّد ﷺ»"
+        }
+      />
+
+      {/* Share App Modal (PWA & Web sharing) */}
+      <ShareAppModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
       />
 
       {/* Top Header */}
@@ -341,6 +497,8 @@ export default function App() {
         totalSalawat={personalSalawat}
         siteStats={siteStats}
         isPlaying={isPlaying}
+        onOpenShareModal={() => setIsShareModalOpen(true)}
+        isStandalone={isStandalone}
       />
 
       {/* Main Content Container */}
@@ -362,19 +520,28 @@ export default function App() {
           />
         )}
 
-        {/* Tab: Dedicated Voice Reminder Page (🔊 التذكير الصوتي - تجريبي) */}
+        {/* Tab: Dedicated Voice & System Reminder Page (🔊 التذكير الصوتي والإشعارات) */}
         {activeTab === "reminder" && (
           <div className="space-y-6 animate-in fade-in duration-200">
             <AudioReminderCard
               enabled={soundReminderEnabled}
               intervalMinutes={soundReminderInterval}
               isMuted={soundMuted}
+              selectedFormulaId={selectedFormulaId}
+              onSelectFormula={setSelectedFormulaId}
               onToggleEnabled={handleToggleReminder}
               onChangeInterval={handleChangeReminderInterval}
               onToggleMute={handleToggleReminderMute}
               onTestSound={handleTestReminderSound}
               isTestingSound={isTestingSound}
               remainingSeconds={remainingSeconds}
+              systemNotificationsEnabled={systemNotificationsEnabled}
+              systemNotificationInterval={systemNotificationInterval}
+              onToggleSystemNotifications={handleToggleSystemNotifications}
+              onChangeSystemNotificationInterval={handleChangeSystemNotificationInterval}
+              onSendTestSystemNotification={handleSendTestSystemNotification}
+              isTestingNotification={isTestingNotification}
+              onOpenShareModal={() => setIsShareModalOpen(true)}
             />
           </div>
         )}
@@ -464,28 +631,54 @@ export default function App() {
             </div>
           </div>
 
-          {/* Facebook Official Contact Badge */}
-          <div className="bg-stone-900/80 border border-blue-600/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow">
-                f
+          {/* Quick Action & Contact Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Share App Sadaqah Jariyah */}
+            <div className="bg-gradient-to-r from-emerald-950/40 to-stone-900 border border-emerald-600/30 rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-stone-950 font-bold shadow flex-shrink-0">
+                  <Share2 className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <p className="font-bold text-stone-100 text-sm">مشاركة التطبيق كصدقة جارية</p>
+                  <p className="text-xs text-stone-300">انشر الخير ليثبت على أي هاتف</p>
+                </div>
               </div>
-              <div>
-                <p className="font-bold text-stone-100 text-sm">صفحة المطور وحساب التواصل على فيسبوك</p>
-                <p className="text-xs text-stone-300">شاركونا مقترحاتكم وساهموا في نشر الصدقة الجارية</p>
-              </div>
+
+              <button
+                id="footer-share-app-btn"
+                type="button"
+                onClick={() => setIsShareModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow active:scale-95 cursor-pointer flex-shrink-0"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>مشاركة</span>
+              </button>
             </div>
 
-            <a
-              id="footer-facebook-link"
-              href="https://www.facebook.com/share/1Bm2aq9mKm/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 transition-all shadow active:scale-95"
-            >
-              <span>زيارة الحساب على فيسبوك</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+            {/* Facebook Official Contact Badge */}
+            <div className="bg-stone-900/80 border border-blue-600/30 rounded-2xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow flex-shrink-0">
+                  f
+                </div>
+                <div>
+                  <p className="font-bold text-stone-100 text-sm">صفحة المطور على فيسبوك</p>
+                  <p className="text-xs text-stone-300">مقترحاتكم وتواصلكم معنا</p>
+                </div>
+              </div>
+
+              <a
+                id="footer-facebook-link"
+                href="https://www.facebook.com/share/1Bm2aq9mKm/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow active:scale-95 flex-shrink-0"
+              >
+                <span>زيارة الحساب</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
           {/* Dua and Prophet Blessing */}
