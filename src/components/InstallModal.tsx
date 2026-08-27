@@ -63,8 +63,13 @@ export const InstallModal: React.FC<InstallModalProps> = ({
 
           {/* Header */}
           <div className="flex items-center gap-3.5 mb-5">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-amber-600 flex items-center justify-center text-stone-950 shadow-lg text-2xl font-serif font-bold">
-              ﷺ
+            <div className="w-14 h-14 rounded-2xl bg-stone-950 border border-amber-500/40 p-1 flex items-center justify-center shadow-lg flex-shrink-0 overflow-hidden">
+              <img
+                src="/icons/icon-192.png"
+                alt="شعار صلوات"
+                className="w-full h-full object-contain rounded-xl"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div>
               <h3 className="text-xl font-bold font-tajawal text-stone-100">

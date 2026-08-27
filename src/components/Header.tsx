@@ -36,8 +36,13 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Brand & Main Reminder */}
           <div className="flex items-center justify-between w-full md:w-auto gap-3">
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="relative flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-950 border border-emerald-500/30 shadow-lg shadow-emerald-950/50 flex-shrink-0">
-                <span className="text-xl sm:text-2xl select-none">🕌</span>
+              <div className="relative flex items-center justify-center w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-stone-900 border border-amber-500/40 shadow-lg shadow-amber-950/40 p-1 flex-shrink-0 overflow-hidden group">
+                <img
+                  src="/icons/icon-192.png"
+                  alt="شعار تطبيق صلوات"
+                  className="w-full h-full object-contain rounded-xl transition-transform duration-300 group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
                 {isPlaying && (
                   <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>

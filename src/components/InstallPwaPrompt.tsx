@@ -104,8 +104,13 @@ export const InstallPwaPrompt: React.FC = () => {
       >
         <div className="relative overflow-hidden bg-gradient-to-r from-emerald-950 via-stone-900 to-stone-900 border-2 border-emerald-400/60 rounded-2xl p-4 shadow-2xl backdrop-blur-xl text-stone-100 ring-4 ring-emerald-500/30">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-amber-500 flex items-center justify-center text-stone-950 shadow-md flex-shrink-0">
-              <Smartphone className="w-6 h-6" />
+            <div className="w-12 h-12 rounded-2xl bg-stone-950 border border-amber-500/40 p-1 flex items-center justify-center shadow-md flex-shrink-0 overflow-hidden">
+              <img
+                src="/icons/icon-192.png"
+                alt="شعار صلوات"
+                className="w-full h-full object-contain rounded-xl"
+                referrerPolicy="no-referrer"
+              />
             </div>
 
             <div className="flex-1 min-w-0 text-right">
