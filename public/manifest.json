@@ -1,0 +1,52 @@
+{
+  "name": "صلوات - الصلاة على النبي ﷺ",
+  "short_name": "صلوات",
+  "description": "منصة إسلامية للتسبيح بالصلاة على النبي ﷺ مع التذكير الصوتي والمقاطع الصوتية بأصوات كبار المشايخ",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0c0a09",
+  "theme_color": "#065f46",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["lifestyle", "utilities", "books"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "المسبحة الإلكترونية",
+      "short_name": "المسبحة",
+      "description": "ابدأ التسبيح والصلاة على النبي ﷺ",
+      "url": "/?tab=tasbeeh",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "التذكير الصوتي",
+      "short_name": "التذكير",
+      "description": "تفعيل التذكير الصوتي الدوري",
+      "url": "/?tab=reminder",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

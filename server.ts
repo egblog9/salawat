@@ -166,6 +166,24 @@ async function startServer() {
     }
   });
 
+  // Serve PWA and static files from public directory
+  const publicDir = path.join(process.cwd(), "public");
+  
+  // Explicit PWA routes with correct Content-Type and Service Worker headers
+  app.get("/manifest.json", (req, res) => {
+    res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
+    res.sendFile(path.join(publicDir, "manifest.json"));
+  });
+
+  app.get("/sw.js", (req, res) => {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("Service-Worker-Allowed", "/");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.sendFile(path.join(publicDir, "sw.js"));
+  });
+
+  app.use(express.static(publicDir));
+
   // Vite middleware in dev or static server in prod
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

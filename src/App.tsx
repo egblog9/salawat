@@ -7,6 +7,7 @@ import { VirtuesSection } from "./components/VirtuesSection";
 import { AudioFloatingBar } from "./components/AudioFloatingBar";
 import { AudioReminderCard } from "./components/AudioReminderCard";
 import { ReminderToast } from "./components/ReminderToast";
+import { InstallPwaPrompt } from "./components/InstallPwaPrompt";
 import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats } from "./types";
 import { sheikhAudioManager, reminderAudioManager } from "./utils/audio";
@@ -322,6 +323,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col selection:bg-emerald-600 selection:text-white relative">
       
+      {/* PWA Mobile Install Floating Prompt */}
+      <InstallPwaPrompt />
+
       {/* Voice Reminder Global Floating Toast Notification */}
       <ReminderToast
         isVisible={showReminderToast}
