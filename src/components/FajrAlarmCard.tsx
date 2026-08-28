@@ -3,7 +3,6 @@ import {
   AlarmClock,
   Volume2,
   Brain,
-  Sparkles,
   Play,
   Check,
   ShieldAlert,

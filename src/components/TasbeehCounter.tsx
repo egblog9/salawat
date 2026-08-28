@@ -331,11 +331,11 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
             >
               <span className="text-[11px] sm:text-xs text-stone-400 font-medium mb-1">اضغط للتسبيح</span>
               <span className="text-5xl sm:text-6xl font-extrabold font-tajawal text-amber-300 tracking-tight drop-shadow-md">
-                {count.toLocaleString()}
+                {(count ?? 0).toLocaleString()}
               </span>
               {target > 0 && (
                 <span className="text-xs text-stone-400 mt-2 bg-stone-950 px-3 py-0.5 rounded-full border border-stone-800">
-                  من أصل {target.toLocaleString()}
+                  من أصل {(target ?? 0).toLocaleString()}
                 </span>
               )}
             </button>
@@ -368,21 +368,21 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
           <div className="bg-stone-950/70 p-3.5 rounded-2xl border border-stone-800">
             <span className="text-[11px] text-stone-400 block mb-1">صلواتك في هذه الجلسة</span>
             <span className="text-lg sm:text-xl font-bold text-amber-300 font-tajawal">
-              {count.toLocaleString()}
+              {(count ?? 0).toLocaleString()}
             </span>
           </div>
 
           <div className="bg-stone-950/70 p-3.5 rounded-2xl border border-stone-800">
             <span className="text-[11px] text-stone-400 block mb-1">إجمالي صلواتك الشخصية</span>
             <span className="text-lg sm:text-xl font-bold text-emerald-300 font-tajawal">
-              {totalLifetimeCount.toLocaleString()}
+              {(totalLifetimeCount ?? 0).toLocaleString()}
             </span>
           </div>
 
           <div className="col-span-2 sm:col-span-1 bg-stone-950/70 p-3.5 rounded-2xl border border-stone-800">
             <span className="text-[11px] text-stone-400 block mb-1">إجمالي التسبيحات على الموقع</span>
             <span className="text-lg sm:text-xl font-bold text-amber-200 font-tajawal">
-              {collectiveTotal.toLocaleString()}
+              {(collectiveTotal ?? 0).toLocaleString()}
             </span>
           </div>
         </div>

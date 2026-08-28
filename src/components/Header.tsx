@@ -71,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center gap-1.5 text-stone-300">
                 <Users className="w-3.5 h-3.5 text-emerald-400" />
                 <span className="font-tajawal font-bold text-amber-300">
-                  {siteStats.visitorsCount.toLocaleString()}
+                  {(siteStats?.visitorsCount ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-stone-400">زائر</span>
               </div>
@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center gap-1.5 text-stone-300">
                 <Heart className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
                 <span className="font-tajawal font-bold text-emerald-300">
-                  {siteStats.totalTasbeehat.toLocaleString()}
+                  {(siteStats?.totalTasbeehat ?? 0).toLocaleString()}
                 </span>
                 <span className="text-[10px] text-stone-400">صلاة</span>
               </div>

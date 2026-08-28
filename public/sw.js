@@ -80,7 +80,7 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// Notification Click Handler: Focus or open the app when clicking system notifications
+// Notification Click Handler: Focus or open the app when clicking system notifications or Fajr alarm actions
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   
@@ -88,11 +88,14 @@ self.addEventListener("notificationclick", (event) => {
   
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      // 1. If an existing window is open, focus it immediately
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.postMessage({ type: "ALARM_NOTIFICATION_CLICKED" });
           return client.focus();
         }
       }
+      // 2. If no window is open, open a new window to show the alarm screen
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }

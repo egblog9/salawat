@@ -34,12 +34,14 @@ export interface SalawatItem {
 }
 
 export interface ReminderVoiceFormula {
-  id: "salli_ala_muhammad" | "allahumma_salli_wasallim";
+  id: string;
   name: string;
   shortName: string;
+  dhikrCategory?: "salawat" | "tasbeeh" | "tahmeed" | "takbeer" | "tahleel" | "istighfar" | "hawqala" | "variety";
   arabicText: string;
   audioPath: string;
   fallbackAyahUrl: string;
+  sheikhName: string;
   description: string;
   ttsText: string;
 }

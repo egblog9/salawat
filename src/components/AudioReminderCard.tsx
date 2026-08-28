@@ -23,12 +23,12 @@ interface AudioReminderCardProps {
   enabled: boolean;
   intervalMinutes: number;
   isMuted: boolean;
-  selectedFormulaId: "salli_ala_muhammad" | "allahumma_salli_wasallim";
-  onSelectFormula: (formulaId: "salli_ala_muhammad" | "allahumma_salli_wasallim") => void;
+  selectedFormulaId: string;
+  onSelectFormula: (formulaId: string) => void;
   onToggleEnabled: (enabled: boolean) => void;
   onChangeInterval: (minutes: number) => void;
   onToggleMute: (muted: boolean) => void;
-  onTestSound: (formulaId?: "salli_ala_muhammad" | "allahumma_salli_wasallim") => void;
+  onTestSound: (formulaId?: string) => void;
   isTestingSound: boolean;
   remainingSeconds: number;
   systemNotificationsEnabled?: boolean;
@@ -61,6 +61,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
   onOpenShareModal,
 }) => {
   const [showPermissionHint, setShowPermissionHint] = useState<boolean>(false);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("all");
 
   const intervals = [
     { value: 1, label: "دقيقة واحدة", shortLabel: "1 دقيقة" },
@@ -168,32 +169,73 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
           </div>
         </div>
 
-        {/* 2 Voice Formula Selection Section (NEW: User chooses between "صلي على محمد" and "اللهم صلي وسلم على نبينا محمد") */}
+        {/* 2 Voice Formula Selection Section */}
         <div className="mt-5 pt-1">
-          <label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5 mb-3">
-            <Music className="w-4 h-4 text-amber-400" />
-            <span>اختر صيغة الصوت للتذكير:</span>
-          </label>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <label className="text-xs sm:text-sm font-bold text-amber-300 flex items-center gap-1.5">
+              <Music className="w-4 h-4 text-amber-400" />
+              <span>اختر الذكر وصوت الشيخ الحقيقي للتذكير:</span>
+            </label>
+            <span className="text-[11px] text-emerald-400 font-medium">
+              أصوات مشايخ حقيقية مسجلة بجودة عالية
+            </span>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {REMINDER_VOICE_FORMULAS.map((formula) => {
+          {/* Categories Quick Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3 no-scrollbar">
+            {[
+              { id: "all", label: "جميع الأذكار" },
+              { id: "salawat", label: "الصلاة على النبي ﷺ" },
+              { id: "tasbeeh", label: "التسبيح والتحميد" },
+              { id: "tahleel", label: "التهليل والتكبير" },
+              { id: "istighfar", label: "الاستغفار والحوقلة" },
+              { id: "variety", label: "أذكار دورية منوعة" },
+            ].map((cat) => {
+              const isActive = activeCategoryFilter === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActiveCategoryFilter(cat.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-amber-400 text-stone-950 shadow"
+                      : "bg-stone-800/80 text-stone-300 hover:bg-stone-700 border border-stone-700/60"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[380px] overflow-y-auto pr-1">
+            {REMINDER_VOICE_FORMULAS.filter((f) => {
+              if (activeCategoryFilter === "all") return true;
+              if (activeCategoryFilter === "salawat") return f.dhikrCategory === "salawat";
+              if (activeCategoryFilter === "tasbeeh") return f.dhikrCategory === "tasbeeh" || f.dhikrCategory === "tahmeed";
+              if (activeCategoryFilter === "tahleel") return f.dhikrCategory === "tahleel" || f.dhikrCategory === "takbeer";
+              if (activeCategoryFilter === "istighfar") return f.dhikrCategory === "istighfar" || f.dhikrCategory === "hawqala";
+              if (activeCategoryFilter === "variety") return f.dhikrCategory === "variety";
+              return true;
+            }).map((formula) => {
               const isSelected = formula.id === selectedFormulaId;
               return (
                 <div
                   key={formula.id}
                   id={`formula-card-${formula.id}`}
                   onClick={() => onSelectFormula(formula.id)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
                     isSelected
-                      ? "bg-emerald-950/70 border-emerald-500 shadow-md ring-2 ring-emerald-500/20"
+                      ? "bg-emerald-950/80 border-emerald-500 shadow-md ring-2 ring-emerald-500/30"
                       : "bg-stone-950/60 border-stone-800/80 hover:bg-stone-900 hover:border-stone-700"
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                          className={`w-5 h-5 rounded-full flex items-center justify-center border flex-shrink-0 ${
                             isSelected
                               ? "bg-emerald-500 border-emerald-400 text-stone-950"
                               : "border-stone-600 bg-stone-900"
@@ -201,7 +243,14 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                         >
                           {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
-                        <span className="font-bold text-stone-100 text-sm">{formula.shortName}</span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-stone-100 text-xs sm:text-sm block truncate">
+                            {formula.shortName}
+                          </span>
+                          <span className="text-[10px] text-amber-300 block truncate">
+                            {formula.sheikhName}
+                          </span>
+                        </div>
                       </div>
 
                       <button
@@ -210,18 +259,18 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                           e.stopPropagation();
                           onTestSound(formula.id);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-medium flex items-center gap-1 transition-colors border border-amber-600/30 active:scale-95"
-                        title="استماع لهذه الصيغة"
+                        className="px-2.5 py-1 rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-300 text-xs font-medium flex items-center gap-1 transition-colors border border-amber-600/30 active:scale-95 flex-shrink-0 cursor-pointer"
+                        title="استماع لهذه التلاوة بصوت الشيخ"
                       >
-                        <Play className="w-3 h-3" />
+                        <Play className="w-3 h-3 fill-current" />
                         <span>استماع</span>
                       </button>
                     </div>
 
-                    <p className="font-amiri text-base text-amber-200 leading-relaxed my-1">
+                    <p className="font-amiri text-sm sm:text-base text-amber-100 leading-relaxed my-1">
                       {formula.arabicText}
                     </p>
-                    <p className="text-[11px] text-stone-400">
+                    <p className="text-[10.5px] text-stone-400 line-clamp-2">
                       {formula.description}
                     </p>
                   </div>

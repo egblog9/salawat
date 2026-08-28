@@ -76,6 +76,69 @@ class SystemNotificationManager {
     return this.sendNotification({ title, body, category: "salawat" });
   }
 
+  public async sendFajrAlarmUrgentNotification(): Promise<boolean> {
+    if (!this.isSupported()) return false;
+
+    let currentPerm = Notification.permission;
+    if (currentPerm === "default") {
+      const granted = await this.requestPermission();
+      currentPerm = granted ? "granted" : "denied";
+    }
+
+    if (currentPerm !== "granted") {
+      return false;
+    }
+
+    const title = "🚨 حان الآن موعد صلاة الفجر!";
+    const notificationOptions: any = {
+      body: "الصلاة خير من النوم - اضغط فوراً لفتح التطبيق وحل لغز الاستيقاظ لإيقاف المنبه ⏰",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      dir: "rtl",
+      lang: "ar",
+      tag: "fajr-alarm-urgent-tag",
+      renotify: true,
+      requireInteraction: true,
+      silent: false,
+      vibrate: [1000, 300, 1000, 300, 1500, 300, 1500],
+      actions: [
+        {
+          action: "solve",
+          title: "🔓 حل التحدي وإيقاف المنبه",
+        },
+        {
+          action: "open",
+          title: "📱 فتح التطبيق على الشاشة",
+        },
+      ],
+      data: {
+        url: "/?action=fajr_alarm",
+        isAlarm: true,
+        dateOfArrival: Date.now(),
+      },
+    };
+
+    try {
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration && "showNotification" in registration) {
+          await registration.showNotification(title, notificationOptions);
+          return true;
+        }
+      }
+      new Notification(title, notificationOptions);
+      return true;
+    } catch (err) {
+      console.warn("Fajr urgent notification error:", err);
+      try {
+        new Notification(title, notificationOptions);
+        return true;
+      } catch (e2) {
+        return false;
+      }
+    }
+  }
+
   public async sendNotification(customMessage?: Partial<IslamicNotificationMessage>): Promise<boolean> {
     if (!this.isSupported()) return false;
 

@@ -267,18 +267,61 @@ class SheikhAudioManager {
 class ReminderAudioManager {
   private reminderAudio: HTMLAudioElement | null = null;
   private isReminderPlaying: boolean = false;
-  private currentFormulaId: "salli_ala_muhammad" | "allahumma_salli_wasallim" = "salli_ala_muhammad";
-  private primaryUrl = "/audio/salawat-reminder.mp3";
-  private fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+  private currentFormulaId: string = "allahumma_salli_wasallim";
+  private primaryUrl = "/audio/salawat-formula-2.mp3";
+  private fallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
+  private rotatingIndex = 0;
 
-  public setFormula(formulaId: "salli_ala_muhammad" | "allahumma_salli_wasallim"): void {
+  public setFormula(formulaId: string, customUrl?: string, customFallback?: string): void {
     this.currentFormulaId = formulaId;
-    if (formulaId === "allahumma_salli_wasallim") {
-      this.primaryUrl = "/audio/salawat-formula-2.mp3";
-      this.fallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
-    } else {
-      this.primaryUrl = "/audio/salawat-reminder.mp3";
-      this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+    if (customUrl) {
+      this.primaryUrl = customUrl;
+      this.fallbackUrl = customFallback || "/audio/salawat-formula-2.mp3";
+      return;
+    }
+
+    switch (formulaId) {
+      case "salli_ala_muhammad":
+        this.primaryUrl = "/audio/salawat-reminder.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+        break;
+      case "allahumma_salli_wasallim":
+        this.primaryUrl = "/audio/salawat-formula-2.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
+        break;
+      case "subhanallah":
+        this.primaryUrl = "https://everyayah.com/data/Alafasy_128kbps/110003.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/087001.mp3";
+        break;
+      case "alhamdulillah":
+        this.primaryUrl = "https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps/001002.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/001002.mp3";
+        break;
+      case "allahu_akbar":
+        this.primaryUrl = "https://everyayah.com/data/Yasser_Ad-Dussary_128kbps/017111.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/074003.mp3";
+        break;
+      case "la_ilaha_illallah":
+        this.primaryUrl = "https://everyayah.com/data/Ghamadi_40kbps/047019.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/047019.mp3";
+        break;
+      case "la_ilaha_illallah_abdulbasit":
+        this.primaryUrl = "https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/002255.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Minshawy_Murattal_128kbps/002255.mp3";
+        break;
+      case "astaghfirullah":
+        this.primaryUrl = "https://everyayah.com/data/Minshawy_Murattal_128kbps/071010.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/071010.mp3";
+        break;
+      case "la_hawla_wala_quwwata":
+        this.primaryUrl = "https://everyayah.com/data/Husary_128kbps/018039.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/018039.mp3";
+        break;
+      case "all_dhikr":
+      default:
+        this.primaryUrl = "/audio/salawat-formula-2.mp3";
+        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+        break;
     }
   }
 
@@ -308,7 +351,7 @@ class ReminderAudioManager {
 
   public playReminder(options?: {
     isMuted?: boolean;
-    formulaId?: "salli_ala_muhammad" | "allahumma_salli_wasallim";
+    formulaId?: string;
     audioUrl?: string;
     fallbackUrl?: string;
     onStart?: () => void;
@@ -323,7 +366,25 @@ class ReminderAudioManager {
     }
 
     if (options?.formulaId) {
-      this.setFormula(options.formulaId);
+      this.setFormula(options.formulaId, options.audioUrl, options.fallbackUrl);
+    }
+
+    // Support automatic rotation when "all_dhikr" is selected
+    if (this.currentFormulaId === "all_dhikr") {
+      const rotationList = [
+        { url: "/audio/salawat-formula-2.mp3", fallback: "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3" },
+        { url: "/audio/salawat-reminder.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/033056.mp3" },
+        { url: "https://everyayah.com/data/Alafasy_128kbps/110003.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/087001.mp3" },
+        { url: "https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps/001002.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/001002.mp3" },
+        { url: "https://everyayah.com/data/Yasser_Ad-Dussary_128kbps/017111.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/074003.mp3" },
+        { url: "https://everyayah.com/data/Ghamadi_40kbps/047019.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/047019.mp3" },
+        { url: "https://everyayah.com/data/Minshawy_Murattal_128kbps/071010.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/071010.mp3" },
+        { url: "https://everyayah.com/data/Husary_128kbps/018039.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/018039.mp3" },
+      ];
+      const selected = rotationList[this.rotatingIndex % rotationList.length];
+      this.primaryUrl = selected.url;
+      this.fallbackUrl = selected.fallback;
+      this.rotatingIndex += 1;
     }
 
     if (!this.reminderAudio) {
@@ -333,19 +394,11 @@ class ReminderAudioManager {
     const audio = this.reminderAudio;
     audio.pause();
     audio.currentTime = 0;
-    audio.volume = 0.9;
+    audio.volume = 0.95;
     audio.preload = "auto";
     
-    let targetUrl = options?.audioUrl || this.primaryUrl;
-    let secondaryFallbackUrl = options?.fallbackUrl || this.fallbackUrl;
-
-    if (options?.formulaId === "allahumma_salli_wasallim") {
-      targetUrl = "/audio/salawat-formula-2.mp3";
-      secondaryFallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
-    } else if (options?.formulaId === "salli_ala_muhammad") {
-      targetUrl = "/audio/salawat-reminder.mp3";
-      secondaryFallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
-    }
+    const targetUrl = options?.audioUrl || this.primaryUrl;
+    const secondaryFallbackUrl = options?.fallbackUrl || this.fallbackUrl;
 
     audio.src = targetUrl;
 

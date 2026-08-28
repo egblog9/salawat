@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Flame,
-  Sparkles,
   RefreshCw,
 } from "lucide-react";
 import { loudAlarmAudioService } from "../utils/alarmAudio";
@@ -116,6 +115,14 @@ export const FajrAlarmChallengeModal: React.FC<FajrAlarmChallengeModalProps> = (
     setErrorMessage(null);
   };
 
+  // Auto enforce volume and fullscreen on user touch
+  const handleUserInteraction = () => {
+    loudAlarmAudioService.enforceMaxVolume();
+    if (typeof document !== "undefined" && !document.fullscreenElement && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(1);
@@ -126,6 +133,11 @@ export const FajrAlarmChallengeModal: React.FC<FajrAlarmChallengeModalProps> = (
       const shuffled = [...initialSentence].sort(() => Math.random() - 0.5);
       setScrambledWords(shuffled);
       setSelectedWords([]);
+
+      // Attempt fullscreen on open if allowed
+      if (typeof document !== "undefined" && document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
     }
   }, [isOpen]);
 
@@ -202,6 +214,8 @@ export const FajrAlarmChallengeModal: React.FC<FajrAlarmChallengeModalProps> = (
     <div
       role="dialog"
       aria-modal="true"
+      onClick={handleUserInteraction}
+      onTouchStart={handleUserInteraction}
       className="fixed inset-0 z-[9999] bg-stone-950/98 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
     >
       {/* Flashing Alert Beacon Borders */}
