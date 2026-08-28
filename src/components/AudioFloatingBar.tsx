@@ -31,7 +31,7 @@ export const AudioFloatingBar: React.FC<AudioFloatingBarProps> = ({
   if (!currentTrack) return null;
 
   return (
-    <div className="fixed bottom-3 sm:bottom-4 left-2.5 right-2.5 sm:left-4 sm:right-4 max-w-2xl mx-auto z-50 animate-slideUp">
+    <div className="fixed bottom-16 md:bottom-4 left-2.5 right-2.5 sm:left-4 sm:right-4 max-w-2xl mx-auto z-50 animate-slideUp">
       <div className="bg-stone-900/95 border border-emerald-500/60 rounded-2xl sm:rounded-3xl p-2.5 sm:p-4 shadow-2xl backdrop-blur-xl flex flex-col gap-2">
         
         <div className="flex items-center justify-between gap-2 sm:gap-3">

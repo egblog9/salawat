@@ -1,18 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Header } from "./components/Header";
+import { MobileBottomNav } from "./components/MobileBottomNav";
 import { TasbeehCounter } from "./components/TasbeehCounter";
 import { SheikhAudioStudio } from "./components/SheikhAudioStudio";
 import { ShareReminder } from "./components/ShareReminder";
+import { MoreHub } from "./components/MoreHub";
 import { VirtuesSection } from "./components/VirtuesSection";
 import { AudioFloatingBar } from "./components/AudioFloatingBar";
 import { AudioReminderCard } from "./components/AudioReminderCard";
 import { ReminderToast } from "./components/ReminderToast";
 import { InstallPwaPrompt } from "./components/InstallPwaPrompt";
 import { ShareAppModal } from "./components/ShareAppModal";
+import { FajrAlarmChallengeModal } from "./components/FajrAlarmChallengeModal";
 import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS, REMINDER_VOICE_FORMULAS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats } from "./types";
 import { sheikhAudioManager, reminderAudioManager } from "./utils/audio";
 import { systemNotificationManager } from "./utils/systemNotifications";
+import { loudAlarmAudioService } from "./utils/alarmAudio";
+import { backgroundTimerService } from "./utils/backgroundTimer";
 import {
   Heart,
   Users,
@@ -153,6 +158,90 @@ export default function App() {
 
   const [isTestingNotification, setIsTestingNotification] = useState<boolean>(false);
 
+  // Fajr Loud Smart Alarm State
+  const [fajrAlarmEnabled, setFajrAlarmEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("fajrAlarmEnabled") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const [fajrAlarmTime, setFajrAlarmTime] = useState<string>(() => {
+    try {
+      return localStorage.getItem("fajrAlarmTime") || "04:30";
+    } catch (e) {
+      return "04:30";
+    }
+  });
+
+  const [fajrChallengeType, setFajrChallengeType] = useState<"math" | "tasbeeh" | "order">(() => {
+    try {
+      const saved = localStorage.getItem("fajrChallengeType");
+      if (saved === "math" || saved === "tasbeeh" || saved === "order") return saved;
+      return "math";
+    } catch (e) {
+      return "math";
+    }
+  });
+
+  const [fajrDifficulty, setFajrDifficulty] = useState<"easy" | "medium" | "hard">(() => {
+    try {
+      const saved = localStorage.getItem("fajrDifficulty");
+      if (saved === "easy" || saved === "medium" || saved === "hard") return saved;
+      return "medium";
+    } catch (e) {
+      return "medium";
+    }
+  });
+
+  const [fajrSoundType, setFajrSoundType] = useState<"adhan" | "intense_alarm" | "adhan_and_siren">(() => {
+    try {
+      const saved = localStorage.getItem("fajrSoundType");
+      if (saved === "adhan" || saved === "intense_alarm" || saved === "adhan_and_siren") return saved;
+      return "adhan_and_siren";
+    } catch (e) {
+      return "adhan_and_siren";
+    }
+  });
+
+  const [isAlarmRinging, setIsAlarmRinging] = useState<boolean>(false);
+  const [lastTriggeredDate, setLastTriggeredDate] = useState<string>("");
+
+  // Background Keep-Alive Audio Mode State
+  const [isBackgroundEnabled, setIsBackgroundEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("isBackgroundEnabled") !== "false";
+    } catch (e) {
+      return true;
+    }
+  });
+
+  // Sync Fajr Alarm Preferences to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("fajrAlarmEnabled", fajrAlarmEnabled.toString());
+      localStorage.setItem("fajrAlarmTime", fajrAlarmTime);
+      localStorage.setItem("fajrChallengeType", fajrChallengeType);
+      localStorage.setItem("fajrDifficulty", fajrDifficulty);
+      localStorage.setItem("fajrSoundType", fajrSoundType);
+    } catch (e) {
+      // ignore
+    }
+  }, [fajrAlarmEnabled, fajrAlarmTime, fajrChallengeType, fajrDifficulty, fajrSoundType]);
+
+  // Sync Background Mode State to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("isBackgroundEnabled", isBackgroundEnabled.toString());
+      if (isBackgroundEnabled && (soundReminderEnabled || fajrAlarmEnabled)) {
+        backgroundTimerService.startAudioKeepAlive();
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [isBackgroundEnabled, soundReminderEnabled, fajrAlarmEnabled]);
+
   // Save selected formula to localStorage and audio manager
   useEffect(() => {
     try {
@@ -230,6 +319,96 @@ export default function App() {
       setIsTestingNotification(false);
     }, 1500);
   };
+
+  // Trigger Fajr Loud Alarm
+  const triggerFajrAlarm = useCallback((soundTypeOverride?: "adhan" | "intense_alarm" | "adhan_and_siren") => {
+    const chosenSound = soundTypeOverride || fajrSoundType;
+    setIsAlarmRinging(true);
+    loudAlarmAudioService.startLoudAlarm(chosenSound);
+
+    if (systemNotificationsEnabled) {
+      systemNotificationManager.sendCustomNotification(
+        "⏰ حان الآن وقت صلاة الفجر!",
+        "الصلاة خير من النوم - اضغط لحل التحدي وإيقاف المنبه الآن 📿"
+      );
+    }
+  }, [fajrSoundType, systemNotificationsEnabled]);
+
+  // Dismiss Alarm Handler
+  const handleDismissAlarm = () => {
+    loudAlarmAudioService.stopLoudAlarm();
+    setIsAlarmRinging(false);
+  };
+
+  // Background Web Worker Ticker Loop (handles voice reminder & Fajr alarm checks synchronously even when screen is locked)
+  useEffect(() => {
+    // If background mode is enabled, start silent keep-alive audio loop
+    if (isBackgroundEnabled && (soundReminderEnabled || fajrAlarmEnabled)) {
+      backgroundTimerService.startAudioKeepAlive();
+    } else {
+      backgroundTimerService.stopAudioKeepAlive();
+    }
+
+    let nextReminderTimestamp = Date.now() + soundReminderInterval * 60 * 1000;
+    setRemainingSeconds(soundReminderInterval * 60);
+
+    const unsubscribe = backgroundTimerService.subscribe(() => {
+      const now = new Date();
+      const currentHoursMinutes = now.toTimeString().slice(0, 5); // "04:30"
+      const todayDateStr = now.toDateString();
+
+      // Check Fajr Alarm
+      if (
+        fajrAlarmEnabled &&
+        !isAlarmRinging &&
+        currentHoursMinutes === fajrAlarmTime &&
+        lastTriggeredDate !== todayDateStr
+      ) {
+        setLastTriggeredDate(todayDateStr);
+        triggerFajrAlarm();
+      }
+
+      // Check Voice Reminder
+      if (soundReminderEnabled) {
+        const nowMs = Date.now();
+        const diff = Math.max(0, Math.ceil((nextReminderTimestamp - nowMs) / 1000));
+        setRemainingSeconds(diff);
+
+        if (nowMs >= nextReminderTimestamp) {
+          setShowReminderToast(true);
+          reminderAudioManager.playReminder({
+            isMuted: soundMuted,
+            formulaId: selectedFormulaId,
+            onStart: () => {},
+            onEnded: () => {},
+          });
+
+          if (systemNotificationsEnabled) {
+            systemNotificationManager.sendNotification();
+          }
+
+          nextReminderTimestamp = Date.now() + soundReminderInterval * 60 * 1000;
+          setRemainingSeconds(soundReminderInterval * 60);
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [
+    isBackgroundEnabled,
+    soundReminderEnabled,
+    soundReminderInterval,
+    soundMuted,
+    selectedFormulaId,
+    systemNotificationsEnabled,
+    fajrAlarmEnabled,
+    fajrAlarmTime,
+    isAlarmRinging,
+    lastTriggeredDate,
+    triggerFajrAlarm,
+  ]);
 
   // Robust Voice Reminder Timer System (Handles interval & plays chosen voice formula)
   useEffect(() => {
@@ -490,6 +669,14 @@ export default function App() {
         onClose={() => setIsShareModalOpen(false)}
       />
 
+      {/* Fajr Loud Smart Alarm Challenge Modal (Intense Alarm & Math/Tasbeeh Puzzle) */}
+      <FajrAlarmChallengeModal
+        isOpen={isAlarmRinging}
+        onDismiss={handleDismissAlarm}
+        challengeType={fajrChallengeType}
+        difficulty={fajrDifficulty}
+      />
+
       {/* Top Header */}
       <Header
         activeTab={activeTab}
@@ -515,7 +702,7 @@ export default function App() {
             isPlaying={isPlaying}
             totalLifetimeCount={personalSalawat}
             onIncrementTotal={handleIncrementTasbeeh}
-            onNavigateToShare={() => setActiveTab("share")}
+            onNavigateToShare={() => setActiveTab("more")}
             collectiveTotal={siteStats.totalTasbeehat}
           />
         )}
@@ -565,18 +752,34 @@ export default function App() {
           />
         )}
 
-
-        {/* Tab 3: Remind Others & Sharing Hub ("وتفكر غيرك") */}
-        {activeTab === "share" && (
-          <ShareReminder onPlaySheikhTrack={handlePlaySheikhTrack} />
-        )}
-
-        {/* Tab 4: Virtues and Authentic Hadiths */}
+        {/* Tab 3: Virtues and Authentic Hadiths */}
         {activeTab === "virtues" && (
           <VirtuesSection
             onPlaySheikhTrack={handlePlaySheikhTrack}
             activePlayingId={currentTrack?.id || null}
             isPlaying={isPlaying}
+          />
+        )}
+
+        {/* Tab 4: More & Additional Tools Hub (المزيد: بطاقات، مشاركة، مميزات قادمة، عن التطبيق) */}
+        {(activeTab === "more" || activeTab === "share") && (
+          <MoreHub
+            onPlaySheikhTrack={handlePlaySheikhTrack}
+            onOpenShareModal={() => setIsShareModalOpen(true)}
+            isStandalone={isStandalone}
+            fajrAlarmEnabled={fajrAlarmEnabled}
+            fajrAlarmTime={fajrAlarmTime}
+            fajrChallengeType={fajrChallengeType}
+            fajrDifficulty={fajrDifficulty}
+            fajrSoundType={fajrSoundType}
+            onToggleFajrAlarm={(enabled) => setFajrAlarmEnabled(enabled)}
+            onChangeFajrTime={(time) => setFajrAlarmTime(time)}
+            onChangeFajrChallengeType={(type) => setFajrChallengeType(type)}
+            onChangeFajrDifficulty={(diff) => setFajrDifficulty(diff)}
+            onChangeFajrSoundType={(sound) => setFajrSoundType(sound)}
+            onTriggerTestAlarm={() => triggerFajrAlarm()}
+            isBackgroundEnabled={isBackgroundEnabled}
+            onToggleBackground={(enabled) => setIsBackgroundEnabled(enabled)}
           />
         )}
       </main>
@@ -596,7 +799,7 @@ export default function App() {
       />
 
       {/* Comprehensive Islamic Footer with Live Stats & Social Links */}
-      <footer className="mt-14 border-t border-stone-900 bg-stone-950 py-10 text-xs text-stone-300">
+      <footer className="mt-14 border-t border-stone-900 bg-stone-950 py-10 pb-28 md:pb-10 text-xs text-stone-300">
         <div className="max-w-5xl mx-auto px-4 space-y-8">
           
           {/* Live Collective Stats Bar in Footer */}
@@ -696,6 +899,12 @@ export default function App() {
 
         </div>
       </footer>
+
+      {/* Modern Thumb-Accessible Mobile Bottom Navigation Dock */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
     </div>
   );
 }
