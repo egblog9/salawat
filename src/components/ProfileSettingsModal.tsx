@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Volume2, ShieldCheck, Moon, Bell, Radio, ExternalLink, Play, Check } from "lucide-react";
+import { X, Volume2, ShieldCheck, Moon, Bell, Radio, ExternalLink, Play, Check, Layers, Sliders, Clock } from "lucide-react";
 import { REMINDER_VOICE_FORMULAS } from "../data/salawatData";
 import { ReminderVoiceFormula } from "../types";
 import { reminderAudioManager } from "../utils/audio";
@@ -19,6 +19,9 @@ interface ProfileSettingsModalProps {
   onToggleSystemNotifications: () => void;
   backgroundKeepAlive: boolean;
   onToggleBackgroundKeepAlive: () => void;
+  onOpenOverlayModal?: () => void;
+  volumeBoostEnabled?: boolean;
+  onToggleVolumeBoost?: (enabled: boolean) => void;
 }
 
 export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
@@ -36,8 +39,24 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   onToggleSystemNotifications,
   backgroundKeepAlive,
   onToggleBackgroundKeepAlive,
+  onOpenOverlayModal,
+  volumeBoostEnabled = true,
+  onToggleVolumeBoost,
 }) => {
   const [testingVoiceId, setTestingVoiceId] = useState<string | null>(null);
+  const [customIntervalInput, setCustomIntervalInput] = useState<string>("");
+
+  const presetIntervals = [
+    { value: 1, label: "دقيقة واحدة" },
+    { value: 2, label: "دقيقتان" },
+    { value: 5, label: "5 دقائق" },
+    { value: 10, label: "10 دقائق" },
+    { value: 15, label: "15 دقيقة" },
+    { value: 20, label: "20 دقيقة" },
+    { value: 30, label: "30 دقيقة" },
+    { value: 45, label: "45 دقيقة" },
+    { value: 60, label: "ساعة" },
+  ];
 
   const handleTestVoice = (e: React.MouseEvent, formula: ReminderVoiceFormula) => {
     e.stopPropagation();
@@ -73,7 +92,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               الإعدادات والملف الشخصي
             </h3>
             <p className="text-xs text-stone-500 font-amiri">
-              تخصيص التذكيرات الصوتية ومنبه الفجر
+              تخصيص التذكيرات الدورية وإذن الظهور ورفع الصوت
             </p>
           </div>
 
@@ -83,20 +102,103 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
         {/* Content */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
           
+          {/* Quick Action: Overlay & Volume Boost Banner */}
+          {onOpenOverlayModal && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-900 to-teal-900 text-white shadow-sm flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center flex-shrink-0">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold font-tajawal">
+                    إذن الظهور فوق التطبيقات ومضخم الصوت
+                  </h4>
+                  <p className="text-[10.5px] text-emerald-200/90 font-tajawal">
+                    الصوت: <strong className="text-amber-300">{volumeBoostEnabled ? "مضاعف 200% ✓" : "عادي"}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenOverlayModal}
+                className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span>ضبط الإذن ⚡</span>
+              </button>
+            </div>
+          )}
+
+          {/* Reminder Interval Selector */}
+          <div className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold font-tajawal text-stone-800 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-emerald-800" />
+                <span>الفاصل الزمني للتذكير التلقائي</span>
+              </h4>
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                كل {reminderInterval} {reminderInterval === 1 ? "دقيقة" : reminderInterval === 2 ? "دقيقتين" : "دقائق"}
+              </span>
+            </div>
+
+            <p className="text-[11px] text-stone-500 font-tajawal">
+              حدد مدة تكرار الذكر التلقائي:
+            </p>
+
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+              {presetIntervals.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => onChangeInterval(item.value)}
+                  className={`py-2 px-1 rounded-xl text-xs font-bold font-tajawal transition-all cursor-pointer border ${
+                    reminderInterval === item.value
+                      ? "bg-[#2F5241] text-white border-[#2F5241] shadow-sm"
+                      : "bg-stone-50 text-stone-700 hover:bg-stone-100 border-stone-200/80"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Minutes Input */}
+            <div className="flex items-center gap-2 pt-2 border-t border-stone-100">
+              <span className="text-xs text-stone-500 font-tajawal whitespace-nowrap">أو مدة مخصصة:</span>
+              <input
+                type="number"
+                min="1"
+                max="720"
+                placeholder="أدخل عدد الدقائق"
+                value={customIntervalInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomIntervalInput(val);
+                  const parsed = parseInt(val, 10);
+                  if (parsed && parsed >= 1 && parsed <= 720) {
+                    onChangeInterval(parsed);
+                  }
+                }}
+                className="w-32 px-3 py-1.5 rounded-xl bg-stone-50 border border-stone-200 text-xs font-bold text-emerald-900 text-center outline-none focus:border-emerald-600"
+              />
+              <span className="text-xs text-stone-500 font-tajawal">دقيقة</span>
+            </div>
+          </div>
+
           {/* Voice Formula */}
           <div className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm space-y-2.5">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold font-tajawal text-stone-800 flex items-center gap-1.5">
                 <Volume2 className="w-4 h-4 text-emerald-800" />
-                <span>صوت الشيخ في التذكير الصوتي الدوري</span>
+                <span>صيغة التذكير الصوتي الدوري</span>
               </h4>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-bold border border-emerald-200 flex items-center gap-1">
-                <span>أصوات مشايخ حقيقية ١٠٠٪</span>
+                <span>أذكار متتابعة وصوت ندي</span>
               </span>
             </div>
 
             <p className="text-[11px] text-stone-500 font-tajawal">
-              تذكير صوتي دوري بالصلاة على النبي وسائر الأذكار بأصوات نقية لكبار المشايخ (بدون ذكاء اصطناعي):
+              اختر وضع التذكير المتتابع (سبحان الله ➜ الحمد لله ➜ الله أكبر...) أو ذكر مخصص:
             </p>
 
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -144,7 +246,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                             ? "bg-emerald-900/80 hover:bg-emerald-800 text-amber-300 border border-emerald-700"
                             : "bg-white hover:bg-stone-200 text-stone-700 border border-stone-300 shadow-sm"
                         }`}
-                        title="استماع لصوت الشيخ"
+                        title="استماع لصوت التذكير"
                       >
                         <Play className="w-3 h-3 fill-current" />
                         <span>{isTesting ? "جاري التشغيل..." : "استماع"}</span>
@@ -155,6 +257,33 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
               })}
             </div>
           </div>
+
+          {/* Volume Boost 200% Direct Toggle */}
+          {onToggleVolumeBoost && (
+            <div className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm flex items-center justify-between">
+              <div className="text-right">
+                <span className="text-xs font-bold font-tajawal text-stone-800 block">
+                  مضخم الصوت العالي (Volume Boost 200%)
+                </span>
+                <span className="text-[10px] text-stone-400 font-tajawal">
+                  مضاعفة قوة الصوت مرتين لضمان سماع الأذكار بوضوح
+                </span>
+              </div>
+
+              <button
+                onClick={() => onToggleVolumeBoost(!volumeBoostEnabled)}
+                className={`w-12 h-6 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                  volumeBoostEnabled ? "bg-[#2F5241]" : "bg-stone-200"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${
+                    volumeBoostEnabled ? "-translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
 
           {/* Fajr Alarm Sound & Challenge Settings */}
           <div className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm space-y-3">

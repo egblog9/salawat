@@ -264,13 +264,130 @@ class SheikhAudioManager {
   }
 }
 
+export interface RotatingDhikrItem {
+  id: string;
+  arabicText: string;
+  ttsText: string;
+  categoryName: string;
+  meaning: string;
+}
+
+export const SEQUENTIAL_AZKAR_LIST: RotatingDhikrItem[] = [
+  {
+    id: "seq_subhanallah",
+    arabicText: "« سُبْحَانَ اللَّهِ »",
+    ttsText: "سبحان الله",
+    categoryName: "تسبيح",
+    meaning: "تنزيه الله تعالى عن كل نقص وعيب",
+  },
+  {
+    id: "seq_alhamdulillah",
+    arabicText: "« الْحَمْدُ لِلَّهِ »",
+    ttsText: "الحمد لله",
+    categoryName: "تحميد",
+    meaning: "الثناء على الله بصفات كماله ونعمه",
+  },
+  {
+    id: "seq_allahuakbar",
+    arabicText: "« اللَّهُ أَكْبَرُ »",
+    ttsText: "الله أكبر",
+    categoryName: "تكبير",
+    meaning: "الله أعظم وأجل من كل شيء في الوجود",
+  },
+  {
+    id: "seq_lailahaillallah",
+    arabicText: "« لَا إِلَهَ إِلَّا اللَّهُ »",
+    ttsText: "لا إله إلا الله",
+    categoryName: "تهليل",
+    meaning: "لا معبود بحق إلا الله وحده لا شريك له",
+  },
+  {
+    id: "seq_astaghfirullah",
+    arabicText: "« أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ »",
+    ttsText: "أستغفر الله وأتوب إليه",
+    categoryName: "استغفار",
+    meaning: "طلب المغفرة والستر من الغفور الرحيم",
+  },
+  {
+    id: "seq_lahawla",
+    arabicText: "« لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ »",
+    ttsText: "لا حول ولا قوة إلا بالله",
+    categoryName: "حوقلة",
+    meaning: "لا تحول من حال إلى حال ولا قوة إلا بعون الله",
+  },
+  {
+    id: "seq_salawat",
+    arabicText: "« اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ ﷺ »",
+    ttsText: "اللهم صلِّ وسلِّم على نبينا محمد",
+    categoryName: "صلاة على النبي",
+    meaning: "الصلاة والسلام على الحبيب المصطفى ﷺ",
+  },
+  {
+    id: "seq_subhan_bihamdihi",
+    arabicText: "« سُبْحَانَ اللَّهِ وَبِحَمْدِهِ ، سُبْحَانَ اللَّهِ الْعَظِيمِ »",
+    ttsText: "سبحان الله وبحمده سبحان الله العظيم",
+    categoryName: "تسبيح عظيم",
+    meaning: "كلمتان خفيفتان على اللسان ثقيلتان في الميزان",
+  },
+];
+
 class ReminderAudioManager {
   private reminderAudio: HTMLAudioElement | null = null;
   private isReminderPlaying: boolean = false;
-  private currentFormulaId: string = "allahumma_salli_wasallim";
+  private currentFormulaId: string = "sequential_rotating_dhikr";
   private primaryUrl = "/audio/salawat-formula-2.mp3";
-  private fallbackUrl = "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3";
+  private fallbackUrl = "/audio/salawat-reminder.mp3";
   private rotatingIndex = 0;
+  private volumeBoost: boolean = true;
+  private audioCtx: AudioContext | null = null;
+  private gainNode: GainNode | null = null;
+  private sourceNode: MediaElementAudioSourceNode | null = null;
+
+  public setVolumeBoost(enabled: boolean): void {
+    this.volumeBoost = enabled;
+    if (this.gainNode) {
+      this.gainNode.gain.value = enabled ? 2.0 : 1.0;
+    }
+  }
+
+  public isVolumeBoostEnabled(): boolean {
+    return this.volumeBoost;
+  }
+
+  public getNextSequentialDhikr(): RotatingDhikrItem {
+    const item = SEQUENTIAL_AZKAR_LIST[this.rotatingIndex % SEQUENTIAL_AZKAR_LIST.length];
+    return item;
+  }
+
+  public advanceSequentialDhikr(): RotatingDhikrItem {
+    const item = SEQUENTIAL_AZKAR_LIST[this.rotatingIndex % SEQUENTIAL_AZKAR_LIST.length];
+    this.rotatingIndex = (this.rotatingIndex + 1) % SEQUENTIAL_AZKAR_LIST.length;
+    return item;
+  }
+
+  private initBoostAudioContext(): void {
+    if (typeof window === "undefined") return;
+    try {
+      if (!this.audioCtx || this.audioCtx.state === "closed") {
+        const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+        this.audioCtx = new AudioCtxClass();
+      }
+      if (this.audioCtx.state === "suspended") {
+        this.audioCtx.resume().catch(() => {});
+      }
+      if (!this.gainNode && this.audioCtx) {
+        this.gainNode = this.audioCtx.createGain();
+        this.gainNode.gain.value = this.volumeBoost ? 2.0 : 1.0;
+        this.gainNode.connect(this.audioCtx.destination);
+      }
+      if (this.reminderAudio && this.audioCtx && this.gainNode && !this.sourceNode) {
+        this.sourceNode = this.audioCtx.createMediaElementSource(this.reminderAudio);
+        this.sourceNode.connect(this.gainNode);
+      }
+    } catch (e) {
+      console.warn("Audio boost initialization:", e);
+    }
+  }
 
   public setFormula(formulaId: string, customUrl?: string, customFallback?: string): void {
     this.currentFormulaId = formulaId;
@@ -305,10 +422,6 @@ class ReminderAudioManager {
         this.primaryUrl = "https://everyayah.com/data/Ghamadi_40kbps/047019.mp3";
         this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/047019.mp3";
         break;
-      case "la_ilaha_illallah_abdulbasit":
-        this.primaryUrl = "https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/002255.mp3";
-        this.fallbackUrl = "https://everyayah.com/data/Minshawy_Murattal_128kbps/002255.mp3";
-        break;
       case "astaghfirullah":
         this.primaryUrl = "https://everyayah.com/data/Minshawy_Murattal_128kbps/071010.mp3";
         this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/071010.mp3";
@@ -317,11 +430,53 @@ class ReminderAudioManager {
         this.primaryUrl = "https://everyayah.com/data/Husary_128kbps/018039.mp3";
         this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/018039.mp3";
         break;
-      case "all_dhikr":
+      case "sequential_rotating_dhikr":
       default:
         this.primaryUrl = "/audio/salawat-formula-2.mp3";
-        this.fallbackUrl = "https://everyayah.com/data/Alafasy_128kbps/033056.mp3";
+        this.fallbackUrl = "/audio/salawat-reminder.mp3";
         break;
+    }
+  }
+
+  // Speak Arabic Dhikr phrase with Web Speech API
+  public speakArabicPhrase(phrase: string, onDone?: () => void): void {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+      sheikhAudioManager.playCompletionChime();
+      onDone?.();
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(phrase);
+      utterance.lang = "ar-SA";
+      utterance.rate = 0.88; // Reverent natural cadence
+      utterance.pitch = 1.0;
+      utterance.volume = this.volumeBoost ? 1.0 : 0.85;
+
+      // Select Arabic voice if available
+      const voices = window.speechSynthesis.getVoices();
+      const arabicVoice = voices.find((v) => v.lang.startsWith("ar"));
+      if (arabicVoice) {
+        utterance.voice = arabicVoice;
+      }
+
+      utterance.onend = () => {
+        onDone?.();
+      };
+      utterance.onerror = () => {
+        sheikhAudioManager.playCompletionChime();
+        onDone?.();
+      };
+
+      // Play soft chime then speak
+      sheikhAudioManager.playCompletionChime();
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 300);
+    } catch (e) {
+      sheikhAudioManager.playCompletionChime();
+      onDone?.();
     }
   }
 
@@ -340,7 +495,7 @@ class ReminderAudioManager {
           if (this.reminderAudio) {
             this.reminderAudio.pause();
             this.reminderAudio.currentTime = 0;
-            this.reminderAudio.volume = 0.85;
+            this.reminderAudio.volume = 1.0;
           }
         }).catch(() => {});
       }
@@ -354,6 +509,7 @@ class ReminderAudioManager {
     formulaId?: string;
     audioUrl?: string;
     fallbackUrl?: string;
+    currentDhikrText?: string;
     onStart?: () => void;
     onEnded?: () => void;
   }): void {
@@ -369,32 +525,30 @@ class ReminderAudioManager {
       this.setFormula(options.formulaId, options.audioUrl, options.fallbackUrl);
     }
 
-    // Support automatic rotation when "all_dhikr" is selected
-    if (this.currentFormulaId === "all_dhikr") {
-      const rotationList = [
-        { url: "/audio/salawat-formula-2.mp3", fallback: "https://everyayah.com/data/MaherAlMuaiqly128kbps/033056.mp3" },
-        { url: "/audio/salawat-reminder.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/033056.mp3" },
-        { url: "https://everyayah.com/data/Alafasy_128kbps/110003.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/087001.mp3" },
-        { url: "https://everyayah.com/data/Abdurrahmaan_As-Sudais_192kbps/001002.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/001002.mp3" },
-        { url: "https://everyayah.com/data/Yasser_Ad-Dussary_128kbps/017111.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/074003.mp3" },
-        { url: "https://everyayah.com/data/Ghamadi_40kbps/047019.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/047019.mp3" },
-        { url: "https://everyayah.com/data/Minshawy_Murattal_128kbps/071010.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/071010.mp3" },
-        { url: "https://everyayah.com/data/Husary_128kbps/018039.mp3", fallback: "https://everyayah.com/data/Alafasy_128kbps/018039.mp3" },
-      ];
-      const selected = rotationList[this.rotatingIndex % rotationList.length];
-      this.primaryUrl = selected.url;
-      this.fallbackUrl = selected.fallback;
-      this.rotatingIndex += 1;
+    // If sequential rotating dhikr is selected, speak the exact pure Dhikr phrase!
+    if (this.currentFormulaId === "sequential_rotating_dhikr") {
+      const activeDhikr = options?.currentDhikrText || this.getNextSequentialDhikr().ttsText;
+      this.isReminderPlaying = true;
+      options?.onStart?.();
+      this.speakArabicPhrase(activeDhikr, () => {
+        this.isReminderPlaying = false;
+        options?.onEnded?.();
+      });
+      return;
     }
 
     if (!this.reminderAudio) {
       this.reminderAudio = new Audio();
     }
 
+    if (this.volumeBoost) {
+      this.initBoostAudioContext();
+    }
+
     const audio = this.reminderAudio;
     audio.pause();
     audio.currentTime = 0;
-    audio.volume = 0.95;
+    audio.volume = 1.0;
     audio.preload = "auto";
     
     const targetUrl = options?.audioUrl || this.primaryUrl;
@@ -409,14 +563,16 @@ class ReminderAudioManager {
         hasFallbackRun = true;
         audio.src = secondaryFallbackUrl;
         audio.play().catch(() => {
-          sheikhAudioManager.playCompletionChime();
+          this.speakArabicPhrase(options?.currentDhikrText || "سبحان الله والحمد لله والله أكبر", () => {
+            this.isReminderPlaying = false;
+            options?.onEnded?.();
+          });
+        });
+      } else {
+        this.speakArabicPhrase(options?.currentDhikrText || "سبحان الله والحمد لله والله أكبر", () => {
           this.isReminderPlaying = false;
           options?.onEnded?.();
         });
-      } else {
-        sheikhAudioManager.playCompletionChime();
-        this.isReminderPlaying = false;
-        options?.onEnded?.();
       }
     };
 
@@ -437,14 +593,16 @@ class ReminderAudioManager {
           hasFallbackRun = true;
           audio.src = secondaryFallbackUrl;
           audio.play().catch(() => {
-            sheikhAudioManager.playCompletionChime();
+            this.speakArabicPhrase(options?.currentDhikrText || "سبحان الله والحمد لله والله أكبر", () => {
+              this.isReminderPlaying = false;
+              options?.onEnded?.();
+            });
+          });
+        } else {
+          this.speakArabicPhrase(options?.currentDhikrText || "سبحان الله والحمد لله والله أكبر", () => {
             this.isReminderPlaying = false;
             options?.onEnded?.();
           });
-        } else {
-          sheikhAudioManager.playCompletionChime();
-          this.isReminderPlaying = false;
-          options?.onEnded?.();
         }
       });
     }
@@ -454,6 +612,9 @@ class ReminderAudioManager {
     if (this.reminderAudio) {
       this.reminderAudio.pause();
       this.reminderAudio.currentTime = 0;
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
     this.isReminderPlaying = false;
   }

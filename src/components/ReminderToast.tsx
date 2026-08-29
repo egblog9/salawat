@@ -8,6 +8,7 @@ interface ReminderToastProps {
   isMuted: boolean;
   onQuickTasbeeh?: () => void;
   arabicText?: string;
+  categoryTitle?: string;
 }
 
 export const ReminderToast: React.FC<ReminderToastProps> = ({
@@ -16,6 +17,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
   isMuted,
   onQuickTasbeeh,
   arabicText = "اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا وَحَبِيبِنَا مُحَمَّدٍ ﷺ",
+  categoryTitle = "تذكير الأذكار والصلاة على النبي",
 }) => {
   const [progress, setProgress] = useState(100);
   const DURATION_MS = 7000;
@@ -81,7 +83,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
                     <Heart className="w-3 h-3 text-amber-400 fill-amber-400" />
-                    <span>تذكير الصلاة على النبي</span>
+                    <span>{categoryTitle}</span>
                   </span>
                   
                   <button
@@ -94,11 +96,11 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                 </div>
 
                 <h3 className="font-bold text-base sm:text-lg text-amber-200 font-tajawal flex items-center gap-1.5 flex-wrap">
-                  <span>🔊 حان وقت الصلاة على النبي ﷺ</span>
+                  <span>🔊 حان وقت الذكر الطيب</span>
                   <Heart className="w-4 h-4 fill-rose-500 text-rose-500 inline flex-shrink-0 animate-ping" />
                 </h3>
 
-                <p className="text-xs sm:text-sm font-amiri text-stone-200 mt-1 font-semibold leading-relaxed">
+                <p className="text-sm sm:text-base font-amiri text-stone-100 mt-1.5 font-bold leading-relaxed tracking-wide">
                   {arabicText}
                 </p>
 
@@ -113,7 +115,7 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                       className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow active:scale-95 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>صلِّ عليه الآن (+1 تسبيحة)</span>
+                      <span>تسبيح (+1 للأجر)</span>
                     </button>
                   </div>
                 )}

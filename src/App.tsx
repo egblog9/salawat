@@ -18,9 +18,10 @@ import { CitySelectorModal } from "./components/CitySelectorModal";
 import { StatsHistoryModal } from "./components/StatsHistoryModal";
 import { ProfileSettingsModal } from "./components/ProfileSettingsModal";
 import { TasbeehModal } from "./components/TasbeehModal";
+import { OverlayAndVolumeModal } from "./components/OverlayAndVolumeModal";
 import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS, REMINDER_VOICE_FORMULAS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats, ReminderVoiceFormula } from "./types";
-import { sheikhAudioManager, reminderAudioManager } from "./utils/audio";
+import { sheikhAudioManager, reminderAudioManager, SEQUENTIAL_AZKAR_LIST } from "./utils/audio";
 import { systemNotificationManager } from "./utils/systemNotifications";
 import { loudAlarmAudioService } from "./utils/alarmAudio";
 import { backgroundTimerService } from "./utils/backgroundTimer";
@@ -36,6 +37,7 @@ export default function App() {
   const [isStatsModalOpen, setIsStatsModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isTasbeehModalOpen, setIsTasbeehModalOpen] = useState<boolean>(false);
+  const [isOverlayModalOpen, setIsOverlayModalOpen] = useState<boolean>(false);
 
   // Selected City for Prayer Times
   const [selectedCity, setSelectedCity] = useState<string>(() => {
@@ -100,6 +102,19 @@ export default function App() {
   const [currentRepeat, setCurrentRepeat] = useState<number>(1);
   const [totalRepeats, setTotalRepeats] = useState<number>(1);
   const [volume, setVolume] = useState<number>(1.0);
+
+  // Volume Boost State (200% Hardware Sound Booster)
+  const [volumeBoostEnabled, setVolumeBoostEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("volumeBoostEnabled") !== "false";
+    } catch (e) {
+      return true;
+    }
+  });
+
+  // Active Dhikr Display Text & Category for floating toast
+  const [activeDhikrText, setActiveDhikrText] = useState<string>("« سُبْحَانَ اللَّهِ »");
+  const [activeDhikrTitle, setActiveDhikrTitle] = useState<string>("تذكير الأذكار المتتابعة");
 
   // Voice Reminder Selected Formula State
   const [selectedVoice, setSelectedVoice] = useState<ReminderVoiceFormula>(() => {
@@ -286,16 +301,45 @@ export default function App() {
         setRemainingSeconds(diff);
 
         if (nowMs >= nextReminderTimestamp) {
-          setShowReminderToast(true);
-          reminderAudioManager.playReminder({
-            isMuted: soundMuted,
-            formulaId: selectedVoice.id as any,
-            onStart: () => {},
-            onEnded: () => {},
-          });
+          if (selectedVoice.id === "sequential_rotating_dhikr") {
+            const nextDhikr = reminderAudioManager.advanceSequentialDhikr();
+            setActiveDhikrText(nextDhikr.arabicText);
+            setActiveDhikrTitle(`تذكير الأذكار المتتابعة (${nextDhikr.categoryName})`);
+            setShowReminderToast(true);
 
-          if (systemNotificationsEnabled) {
-            systemNotificationManager.sendNotification();
+            reminderAudioManager.playReminder({
+              isMuted: soundMuted,
+              formulaId: "sequential_rotating_dhikr",
+              currentDhikrText: nextDhikr.ttsText,
+              onStart: () => {},
+              onEnded: () => {},
+            });
+
+            if (systemNotificationsEnabled) {
+              systemNotificationManager.sendCustomNotification(
+                `🕊️ حان وقت الذكر: ${nextDhikr.ttsText}`,
+                `${nextDhikr.arabicText} - ${nextDhikr.meaning}`
+              );
+            }
+          } else {
+            setActiveDhikrText(selectedVoice.arabicText);
+            setActiveDhikrTitle(`تذكير: ${selectedVoice.shortName}`);
+            setShowReminderToast(true);
+
+            reminderAudioManager.playReminder({
+              isMuted: soundMuted,
+              formulaId: selectedVoice.id as any,
+              currentDhikrText: selectedVoice.ttsText,
+              onStart: () => {},
+              onEnded: () => {},
+            });
+
+            if (systemNotificationsEnabled) {
+              systemNotificationManager.sendCustomNotification(
+                `🕊️ تذكير: ${selectedVoice.shortName}`,
+                `${selectedVoice.arabicText} (${selectedVoice.sheikhName})`
+              );
+            }
           }
 
           nextReminderTimestamp = Date.now() + soundReminderInterval * 60 * 1000;
@@ -495,7 +539,33 @@ export default function App() {
         onClose={() => setShowReminderToast(false)}
         isMuted={soundMuted}
         onQuickTasbeeh={handleIncrementTasbeeh}
-        arabicText={selectedVoice.ttsText || "«صَلِّ عَلَى مُحَمَّد ﷺ»"}
+        arabicText={activeDhikrText}
+        categoryTitle={activeDhikrTitle}
+      />
+
+      {/* Overlay & Hardware Volume Boost Modal */}
+      <OverlayAndVolumeModal
+        isOpen={isOverlayModalOpen}
+        onClose={() => setIsOverlayModalOpen(false)}
+        volumeBoostEnabled={volumeBoostEnabled}
+        onToggleVolumeBoost={(enabled) => setVolumeBoostEnabled(enabled)}
+        overlayNotificationEnabled={systemNotificationsEnabled}
+        onToggleOverlayNotification={(enabled) => setSystemNotificationsEnabled(enabled)}
+        onTestReminderSound={() => {
+          if (selectedVoice.id === "sequential_rotating_dhikr") {
+            const sample = reminderAudioManager.getNextSequentialDhikr();
+            reminderAudioManager.playReminder({
+              formulaId: "sequential_rotating_dhikr",
+              currentDhikrText: sample.ttsText,
+            });
+          } else {
+            reminderAudioManager.playReminder({
+              formulaId: selectedVoice.id as any,
+              audioUrl: selectedVoice.audioPath,
+              fallbackUrl: selectedVoice.fallbackAyahUrl,
+            });
+          }
+        }}
       />
 
       {/* Share App Modal */}
@@ -592,17 +662,55 @@ export default function App() {
         }}
         backgroundKeepAlive={isBackgroundEnabled}
         onToggleBackgroundKeepAlive={() => setIsBackgroundEnabled(!isBackgroundEnabled)}
+        onOpenOverlayModal={() => {
+          setIsProfileModalOpen(false);
+          setIsOverlayModalOpen(true);
+        }}
+        volumeBoostEnabled={volumeBoostEnabled}
+        onToggleVolumeBoost={(enabled) => setVolumeBoostEnabled(enabled)}
       />
 
       {/* Top Application Header (Bell, Title + Mosque Dome, Date) */}
       <SalawatHeader
         notificationsEnabled={soundReminderEnabled || systemNotificationsEnabled}
         onToggleNotifications={() => setIsProfileModalOpen(true)}
-        onOpenNotifications={() => setIsProfileModalOpen(true)}
+        onOpenNotifications={() => setIsOverlayModalOpen(true)}
       />
 
       {/* Main Single-Screen Streamlined Container strictly matching mockup */}
       <main className="flex-1 max-w-md w-full mx-auto px-4 pt-3 pb-8 space-y-4">
+        
+        {/* Quick Permission & Volume Boost Banner */}
+        <div className="bg-gradient-to-r from-stone-900 via-emerald-950 to-stone-900 text-white p-3.5 rounded-2xl border border-emerald-500/40 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm font-bold">
+              ⚡
+            </span>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold font-tajawal text-emerald-200">
+                  التذكير التلقائي المتتابع
+                </span>
+                <span className="text-[10px] bg-emerald-900 text-emerald-300 px-1.5 py-0.2 rounded font-bold">
+                  كل {soundReminderInterval} د
+                </span>
+              </div>
+              <span className="text-[10.5px] text-stone-300 font-amiri block">
+                {selectedVoice.id === "sequential_rotating_dhikr"
+                  ? "سبحان الله ➜ الحمد لله ➜ الله أكبر..."
+                  : selectedVoice.shortName}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsOverlayModalOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1 whitespace-nowrap"
+          >
+            <span>إذن الظهور والصوت ⚙️</span>
+          </button>
+        </div>
         
         {/* 1. Green Dome Hero Card with Interactive Salawat Counter */}
         <SalawatHeroCard

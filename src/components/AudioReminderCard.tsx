@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { REMINDER_VOICE_FORMULAS } from "../data/salawatData";
 import { ReminderVoiceFormula } from "../types";
+import { Layers, Sliders, Volume2 as VolumeBoostIcon } from "lucide-react";
 
 interface AudioReminderCardProps {
   enabled: boolean;
@@ -38,6 +39,8 @@ interface AudioReminderCardProps {
   onSendTestSystemNotification?: () => void;
   isTestingNotification?: boolean;
   onOpenShareModal?: () => void;
+  onOpenOverlaySettings?: () => void;
+  volumeBoostEnabled?: boolean;
 }
 
 export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
@@ -59,17 +62,27 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
   onSendTestSystemNotification,
   isTestingNotification = false,
   onOpenShareModal,
+  onOpenOverlaySettings,
+  volumeBoostEnabled = true,
 }) => {
   const [showPermissionHint, setShowPermissionHint] = useState<boolean>(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("all");
+  const [customIntervalInput, setCustomIntervalInput] = useState<string>("");
+  const [isCustomMode, setIsCustomMode] = useState<boolean>(() => {
+    return ![1, 2, 5, 10, 15, 20, 30, 45, 60, 120].includes(intervalMinutes);
+  });
 
   const intervals = [
     { value: 1, label: "دقيقة واحدة", shortLabel: "1 دقيقة" },
+    { value: 2, label: "دقيقتان", shortLabel: "2 دقيقة" },
     { value: 5, label: "5 دقائق", shortLabel: "5 دقائق" },
     { value: 10, label: "10 دقائق", shortLabel: "10 دقائق" },
     { value: 15, label: "15 دقيقة", shortLabel: "15 دقيقة" },
+    { value: 20, label: "20 دقيقة", shortLabel: "20 دقيقة" },
     { value: 30, label: "30 دقيقة", shortLabel: "30 دقيقة" },
-    { value: 60, label: "60 دقيقة", shortLabel: "60 دقيقة" },
+    { value: 45, label: "45 دقيقة", shortLabel: "45 دقيقة" },
+    { value: 60, label: "ساعة واحدة", shortLabel: "60 دقيقة" },
+    { value: 120, label: "ساعتان", shortLabel: "ساعتان" },
   ];
 
   const systemIntervals = [
@@ -301,17 +314,20 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
               </div>
 
               {/* Segmented Interval Choices */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {intervals.map((item) => {
-                  const isSelected = intervalMinutes === item.value;
+                  const isSelected = !isCustomMode && intervalMinutes === item.value;
                   return (
                     <button
                       key={item.value}
                       id={`interval-btn-${item.value}`}
                       type="button"
-                      onClick={() => onChangeInterval(item.value)}
+                      onClick={() => {
+                        setIsCustomMode(false);
+                        onChangeInterval(item.value);
+                      }}
                       aria-label={`تذكير كل ${item.label}`}
-                      className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-center border cursor-pointer active:scale-95 ${
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center border cursor-pointer active:scale-95 ${
                         isSelected
                           ? "bg-emerald-600 border-emerald-400 text-stone-950 shadow-md font-extrabold ring-2 ring-emerald-500/20"
                           : "bg-stone-950/80 border-stone-800 text-stone-300 hover:bg-stone-800/80 hover:text-stone-100 hover:border-stone-700"
@@ -327,58 +343,109 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                   );
                 })}
               </div>
+
+              {/* Custom Interval Option Input */}
+              <div className="mt-2.5 flex items-center gap-2 bg-stone-950/60 p-2.5 rounded-2xl border border-stone-800">
+                <span className="text-xs text-stone-400 whitespace-nowrap">أو حدد مدة مخصصة:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="720"
+                  placeholder="مثال: 3 أو 7"
+                  value={isCustomMode ? (customIntervalInput || intervalMinutes.toString()) : customIntervalInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomIntervalInput(val);
+                    const parsed = parseInt(val, 10);
+                    if (parsed && parsed >= 1 && parsed <= 720) {
+                      setIsCustomMode(true);
+                      onChangeInterval(parsed);
+                    }
+                  }}
+                  className="w-24 px-3 py-1.5 rounded-xl bg-stone-900 border border-stone-700 text-amber-300 text-xs font-bold text-center focus:outline-none focus:border-emerald-500"
+                />
+                <span className="text-xs text-stone-300">دقيقة</span>
+                {isCustomMode && (
+                  <span className="text-[11px] text-emerald-400 font-bold mr-auto">
+                    (تذكير كل {intervalMinutes} دقيقة)
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Audio & Sound Options Control Bar */}
-            <div className="bg-stone-950/70 rounded-2xl p-4 border border-stone-800/80 flex flex-wrap items-center justify-between gap-3">
-              
-              {/* Audio Mute / Unmute Controls */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-stone-400 font-medium">حالة الصوت:</span>
-                <button
-                  id="reminder-mute-toggle-btn"
-                  type="button"
-                  onClick={() => onToggleMute(!isMuted)}
-                  aria-label={isMuted ? "تشغيل الصوت" : "كتم الصوت"}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer active:scale-95 ${
-                    !isMuted
-                      ? "bg-emerald-950 border-emerald-600/60 text-emerald-300"
-                      : "bg-stone-900 border-stone-700 text-stone-400"
-                  }`}
-                >
-                  {!isMuted ? (
-                    <>
-                      <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>🔊 تشغيل الصوت</span>
-                    </>
-                  ) : (
-                    <>
-                      <VolumeX className="w-3.5 h-3.5 text-rose-400" />
-                      <span>🔇 كتم الصوت (إشعار مرئي فقط)</span>
-                    </>
-                  )}
-                </button>
+            {/* Audio, Volume Boost & Overlay Controls Bar */}
+            <div className="bg-stone-950/70 rounded-2xl p-4 border border-stone-800/80 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {/* Audio Mute / Unmute Controls */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone-400 font-medium">حالة الصوت:</span>
+                  <button
+                    id="reminder-mute-toggle-btn"
+                    type="button"
+                    onClick={() => onToggleMute(!isMuted)}
+                    aria-label={isMuted ? "تشغيل الصوت" : "كتم الصوت"}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer active:scale-95 ${
+                      !isMuted
+                        ? "bg-emerald-950 border-emerald-600/60 text-emerald-300"
+                        : "bg-stone-900 border-stone-700 text-stone-400"
+                    }`}
+                  >
+                    {!isMuted ? (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>🔊 تشغيل الصوت</span>
+                      </>
+                    ) : (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                        <span>🔇 كتم الصوت (إشعار مرئي فقط)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Test Sound Button */}
+                <div className="flex items-center gap-2">
+                  <button
+                    id="test-reminder-audio-btn"
+                    type="button"
+                    onClick={() => onTestSound()}
+                    disabled={isTestingSound}
+                    aria-label="اختبار الصوت المختار"
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer ${
+                      isTestingSound
+                        ? "bg-amber-600 text-stone-950 animate-pulse"
+                        : "bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-600/30"
+                    }`}
+                  >
+                    <Play className={`w-3.5 h-3.5 ${isTestingSound ? "animate-spin" : ""}`} />
+                    <span>{isTestingSound ? "جاري الاستماع..." : "اختبار الصوت المختار 🎧"}</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Test Sound Button */}
-              <div className="flex items-center gap-2">
-                <button
-                  id="test-reminder-audio-btn"
-                  type="button"
-                  onClick={() => onTestSound()}
-                  disabled={isTestingSound}
-                  aria-label="اختبار الصوت المختار"
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow active:scale-95 cursor-pointer ${
-                    isTestingSound
-                      ? "bg-amber-600 text-stone-950 animate-pulse"
-                      : "bg-stone-800 hover:bg-stone-700 text-amber-300 border border-amber-600/30"
-                  }`}
-                >
-                  <Play className={`w-3.5 h-3.5 ${isTestingSound ? "animate-spin" : ""}`} />
-                  <span>{isTestingSound ? "جاري الاستماع..." : "اختبار الصوت المختار 🎧"}</span>
-                </button>
-              </div>
-
+              {/* Overlay & Volume Boost Quick Settings Button */}
+              {onOpenOverlaySettings && (
+                <div className="pt-2 border-t border-stone-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2 text-xs text-stone-300">
+                    <Layers className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>
+                      إذن الظهور فوق التطبيقات ومضخم الصوت:{" "}
+                      <strong className="text-amber-300">
+                        {volumeBoostEnabled ? "صوت مضاعف 200% ✓" : "عادي"}
+                      </strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onOpenOverlaySettings}
+                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 cursor-pointer transition-all"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-amber-300" />
+                    <span>ضبط إذن الظهور ورفع الصوت ⚡</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Background reminder mode tip */}
