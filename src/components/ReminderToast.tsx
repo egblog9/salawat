@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Volume2, VolumeX, X, Heart, CheckCircle2 } from "lucide-react";
+import { Volume2, VolumeX, X, Heart, CheckCircle2, Square } from "lucide-react";
+import { reminderAudioManager } from "../utils/audio";
 
 interface ReminderToastProps {
   isVisible: boolean;
   onClose: () => void;
+  onStopAudio?: () => void;
   isMuted: boolean;
   onQuickTasbeeh?: () => void;
   arabicText?: string;
@@ -14,6 +16,7 @@ interface ReminderToastProps {
 export const ReminderToast: React.FC<ReminderToastProps> = ({
   isVisible,
   onClose,
+  onStopAudio,
   isMuted,
   onQuickTasbeeh,
   arabicText = "اللَّهُمَّ صَلِّ وَسَلِّمْ وَبَارِكْ عَلَى نَبِيِّنَا وَحَبِيبِنَا مُحَمَّدٍ ﷺ",
@@ -21,6 +24,14 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
 }) => {
   const [progress, setProgress] = useState(100);
   const DURATION_MS = 7000;
+
+  const handleStopAndClose = () => {
+    try {
+      reminderAudioManager.stopReminder();
+    } catch (e) {}
+    onStopAudio?.();
+    onClose();
+  };
 
   useEffect(() => {
     if (!isVisible) {
@@ -87,9 +98,10 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                   </span>
                   
                   <button
-                    onClick={onClose}
-                    aria-label="إغلاق الإشعار"
+                    onClick={handleStopAndClose}
+                    aria-label="إغلاق وإيقاف الصوت"
                     className="text-stone-400 hover:text-stone-100 p-1 rounded-lg hover:bg-stone-800/80 transition-colors"
+                    title="إغلاق وإيقاف الصوت"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -104,21 +116,31 @@ export const ReminderToast: React.FC<ReminderToastProps> = ({
                   {arabicText}
                 </p>
 
-                {/* Action button */}
-                {onQuickTasbeeh && (
-                  <div className="mt-2.5 flex items-center gap-2">
+                {/* Action buttons */}
+                <div className="mt-3 flex items-center gap-2 flex-wrap">
+                  {onQuickTasbeeh && (
                     <button
                       onClick={() => {
                         onQuickTasbeeh();
-                        onClose();
+                        handleStopAndClose();
                       }}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow active:scale-95 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow active:scale-95 cursor-pointer"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>تسبيح (+1 للأجر)</span>
                     </button>
-                  </div>
-                )}
+                  )}
+
+                  {/* Immediate Stop Audio button */}
+                  <button
+                    type="button"
+                    onClick={handleStopAndClose}
+                    className="px-3 py-1.5 rounded-xl bg-rose-800 hover:bg-rose-700 text-rose-100 font-bold text-xs flex items-center gap-1.5 transition-all border border-rose-600/50 shadow active:scale-95 cursor-pointer"
+                  >
+                    <Square className="w-3 h-3 fill-current" />
+                    <span>إيقاف الصوت</span>
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -1,8 +1,10 @@
 import React from "react";
-import { Bell, BellOff, Calendar } from "lucide-react";
+import { Bell, BellOff, Calendar, Square } from "lucide-react";
 
 interface SalawatHeaderProps {
   notificationsEnabled?: boolean;
+  isPlaying?: boolean;
+  onStopAllAudio?: () => void;
   onToggleNotifications?: () => void;
   onOpenNotifications?: () => void;
   onOpenDateDetails?: () => void;
@@ -10,6 +12,8 @@ interface SalawatHeaderProps {
 
 export const SalawatHeader: React.FC<SalawatHeaderProps> = ({
   notificationsEnabled = true,
+  isPlaying = false,
+  onStopAllAudio,
   onToggleNotifications,
   onOpenNotifications,
   onOpenDateDetails,
@@ -47,22 +51,38 @@ export const SalawatHeader: React.FC<SalawatHeaderProps> = ({
   return (
     <header className="w-full flex items-center justify-between gap-2 pt-2 pb-1 select-none">
       
-      {/* Left: Notification Bell Button */}
-      <button
-        id="header-notification-btn"
-        onClick={handleNotificationsClick}
-        className="w-12 h-12 rounded-full bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-100 flex items-center justify-center text-stone-700 hover:text-emerald-700 hover:border-emerald-200 transition-all active:scale-95 cursor-pointer relative"
-        title={notificationsEnabled ? "التذكيرات والإشعارات مفعّلة" : "تفعيل التذكيرات"}
-      >
-        {notificationsEnabled ? (
-          <>
-            <Bell className="w-5 h-5 text-emerald-800" />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white"></span>
-          </>
-        ) : (
-          <BellOff className="w-5 h-5 text-stone-400" />
+      {/* Left: Notification Bell Button OR Active STOP AUDIO Button if sound is playing */}
+      <div className="flex items-center gap-1.5">
+        <button
+          id="header-notification-btn"
+          onClick={handleNotificationsClick}
+          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-100 flex items-center justify-center text-stone-700 hover:text-emerald-700 hover:border-emerald-200 transition-all active:scale-95 cursor-pointer relative"
+          title={notificationsEnabled ? "التذكيرات والإشعارات مفعّلة" : "تفعيل التذكيرات"}
+        >
+          {notificationsEnabled ? (
+            <>
+              <Bell className="w-5 h-5 text-emerald-800" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+            </>
+          ) : (
+            <BellOff className="w-5 h-5 text-stone-400" />
+          )}
+        </button>
+
+        {/* Instant Stop Audio Button when any audio is active */}
+        {isPlaying && onStopAllAudio && (
+          <button
+            id="salawat-header-stop-audio-btn"
+            type="button"
+            onClick={onStopAllAudio}
+            className="px-2.5 sm:px-3 h-11 sm:h-12 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer animate-pulse ring-2 ring-rose-300"
+            title="إيقاف الصوت حالاً"
+          >
+            <Square className="w-3.5 h-3.5 fill-white" />
+            <span className="font-tajawal font-bold text-[11px] sm:text-xs">إيقاف</span>
+          </button>
         )}
-      </button>
+      </div>
 
       {/* Center: Brand Typography with Mosque Dome Symbol */}
       <div className="flex flex-col items-center justify-center text-center">
@@ -89,7 +109,7 @@ export const SalawatHeader: React.FC<SalawatHeaderProps> = ({
       {/* Right: Date Pill Card */}
       <button
         onClick={onOpenDateDetails}
-        className="h-12 px-3 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-100 flex items-center gap-2 hover:border-emerald-200 transition-all active:scale-95 text-right cursor-pointer"
+        className="h-11 sm:h-12 px-2.5 sm:px-3 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-100 flex items-center gap-2 hover:border-emerald-200 transition-all active:scale-95 text-right cursor-pointer"
         title="التاريخ الهجري والميلادي"
       >
         <div className="flex flex-col items-start leading-tight">

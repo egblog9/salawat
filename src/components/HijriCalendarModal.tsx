@@ -1,0 +1,666 @@
+import React, { useState, useMemo } from "react";
+import {
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Calendar as CalendarIcon,
+  Moon,
+  Sun,
+  Star,
+  Sparkles,
+  ArrowRightLeft,
+  Clock,
+  Info,
+  CheckCircle2,
+} from "lucide-react";
+import {
+  HIJRI_MONTHS,
+  ISLAMIC_EVENTS,
+  getHijriDate,
+  getMonthCalendarDays,
+  HijriDateInfo,
+} from "../utils/hijriCalendar";
+
+interface HijriCalendarModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const HijriCalendarModal: React.FC<HijriCalendarModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const [activeTab, setActiveTab] = useState<"calendar" | "events" | "converter">("calendar");
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [selectedDayInfo, setSelectedDayInfo] = useState<HijriDateInfo>(() =>
+    getHijriDate(new Date(), 0)
+  );
+  const [hijriAdjustment, setHijriAdjustment] = useState<number>(() => {
+    return parseInt(localStorage.getItem("hijri_day_offset") || "0", 10);
+  });
+
+  // Converter Form State
+  const [convMode, setConvMode] = useState<"g2h" | "h2g">("g2h");
+  const [convGDate, setConvGDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [convHDay, setConvHDay] = useState<number>(1);
+  const [convHMonth, setConvHMonth] = useState<number>(9);
+  const [convHYear, setConvHYear] = useState<number>(1447);
+
+  const saveAdjustment = (adj: number) => {
+    setHijriAdjustment(adj);
+    localStorage.setItem("hijri_day_offset", adj.toString());
+  };
+
+  const calendarData = useMemo(() => {
+    return getMonthCalendarDays(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      hijriAdjustment
+    );
+  }, [currentDate, hijriAdjustment]);
+
+  const todayHijri = useMemo(() => {
+    return getHijriDate(new Date(), hijriAdjustment);
+  }, [hijriAdjustment]);
+
+  const monthNamesAr = [
+    "يناير",
+    "فبراير",
+    "مارس",
+    "أبريل",
+    "مايو",
+    "يونيو",
+    "يوليو",
+    "أغسطس",
+    "سبتمبر",
+    "أكتوبر",
+    "نوفمبر",
+    "ديسمبر",
+  ];
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const handleGoToday = () => {
+    const now = new Date();
+    setCurrentDate(now);
+    setSelectedDayInfo(getHijriDate(now, hijriAdjustment));
+  };
+
+  // Convert Result
+  const convertedResult = useMemo(() => {
+    if (convMode === "g2h") {
+      try {
+        const d = new Date(convGDate);
+        if (isNaN(d.getTime())) return null;
+        return getHijriDate(d, hijriAdjustment);
+      } catch {
+        return null;
+      }
+    } else {
+      // Hijri to Gregorian
+      try {
+        const refHYear = 1446;
+        const refHMonth = 1;
+        const refHDay = 1;
+        const refGDate = new Date(2024, 6, 7).getTime();
+
+        const totalHDays =
+          (convHYear - refHYear) * 354.367 +
+          (convHMonth - refHMonth) * 29.53 +
+          (convHDay - refHDay);
+        const approxGTime = refGDate + totalHDays * 86400000;
+        const resultDate = new Date(approxGTime);
+        const hInfo = getHijriDate(resultDate, hijriAdjustment);
+        return {
+          gregorianDate: resultDate,
+          hijriInfo: hInfo,
+        };
+      } catch {
+        return null;
+      }
+    }
+  }, [convMode, convGDate, convHDay, convHMonth, convHYear, hijriAdjustment]);
+
+  if (!isOpen) return null;
+
+  const weekDayLabels = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
+
+  return (
+    <div
+      id="hijri-calendar-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn select-none"
+    >
+      <div className="bg-[#FAF9F5] w-full max-w-lg rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[92vh]">
+        
+        {/* Modal Header */}
+        <div className="bg-gradient-to-r from-emerald-900 via-stone-900 to-emerald-950 text-white p-4 sm:p-5 flex items-center justify-between border-b border-emerald-800/40 relative">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-800/60 border border-emerald-500/40 flex items-center justify-center text-emerald-300 shadow">
+              <Moon className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold font-tajawal text-white flex items-center gap-2">
+                <span>التقويم الهجري والمناسبات</span>
+                <span className="text-[10px] bg-emerald-600/80 px-2 py-0.5 rounded-full font-sans">
+                  {todayHijri.year} هـ
+                </span>
+              </h2>
+              <p className="text-xs text-emerald-200/90 font-amiri">
+                اليوم: {todayHijri.dayName} {todayHijri.day} {todayHijri.monthName} {todayHijri.year} هـ
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+            title="إغلاق"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex border-b border-stone-200 bg-white px-3 pt-2 gap-2">
+          <button
+            onClick={() => setActiveTab("calendar")}
+            className={`flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === "calendar"
+                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
+                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+            }`}
+          >
+            <CalendarIcon className="w-4 h-4" />
+            <span>عرض الشهر</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("events")}
+            className={`flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === "events"
+                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
+                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+            }`}
+          >
+            <Star className="w-4 h-4 text-amber-500" />
+            <span>المناسبات الإسلامية</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("converter")}
+            className={`flex-1 py-2.5 px-2 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === "converter"
+                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
+                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+            }`}
+          >
+            <ArrowRightLeft className="w-4 h-4 text-emerald-600" />
+            <span>محول التاريخ</span>
+          </button>
+        </div>
+
+        {/* Modal Body Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          
+          {/* TAB 1: CALENDAR VIEW */}
+          {activeTab === "calendar" && (
+            <div className="space-y-4">
+              
+              {/* Month Switcher Header */}
+              <div className="bg-white p-3 rounded-2xl border border-stone-200/90 shadow-sm flex items-center justify-between">
+                <button
+                  onClick={handlePrevMonth}
+                  className="p-2 rounded-xl bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-800 transition-colors cursor-pointer"
+                  title="الشهر السابق"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                <div className="text-center">
+                  <h3 className="text-base sm:text-lg font-bold font-tajawal text-emerald-950">
+                    {monthNamesAr[currentDate.getMonth()]} {currentDate.getFullYear()} م
+                  </h3>
+                  <div className="text-xs text-stone-500 font-amiri flex items-center justify-center gap-1.5">
+                    <span>
+                      {calendarData.days[0]?.hijri.monthName} /{" "}
+                      {calendarData.days[calendarData.days.length - 1]?.hijri.monthName}{" "}
+                      {calendarData.days[0]?.hijri.year} هـ
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleGoToday}
+                    className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-[11px] font-bold font-tajawal transition-colors cursor-pointer"
+                  >
+                    اليوم
+                  </button>
+                  <button
+                    onClick={handleNextMonth}
+                    className="p-2 rounded-xl bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-800 transition-colors cursor-pointer"
+                    title="الشهر القادم"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Calendar Days Grid */}
+              <div className="bg-white p-3 rounded-2xl border border-stone-200/90 shadow-sm">
+                
+                {/* Week Day Header */}
+                <div className="grid grid-cols-7 gap-1 text-center mb-2 pb-1 border-b border-stone-100">
+                  {weekDayLabels.map((w, idx) => (
+                    <span
+                      key={w}
+                      className={`text-[11px] font-bold font-tajawal ${
+                        idx === 5 ? "text-emerald-700" : "text-stone-500"
+                      }`}
+                    >
+                      {w}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Empty cells before start of month */}
+                <div className="grid grid-cols-7 gap-1 text-center">
+                  {Array.from({ length: calendarData.startDayOfWeek }).map((_, i) => (
+                    <div key={`empty-${i}`} className="h-14 sm:h-16 rounded-xl bg-stone-50/50 opacity-25"></div>
+                  ))}
+
+                  {/* Month Days */}
+                  {calendarData.days.map((item) => {
+                    const isSelected =
+                      selectedDayInfo.gregorianDate.getDate() === item.gregorianDate.getDate() &&
+                      selectedDayInfo.gregorianDate.getMonth() === item.gregorianDate.getMonth();
+
+                    const hasEvents = item.hijri.events.length > 0;
+                    const isWhite = item.hijri.isWhiteDay;
+
+                    return (
+                      <button
+                        key={item.gregorianDay}
+                        onClick={() => setSelectedDayInfo(item.hijri)}
+                        className={`h-14 sm:h-16 rounded-xl p-1 flex flex-col justify-between items-center transition-all cursor-pointer relative border ${
+                          item.isToday
+                            ? "bg-emerald-700 text-white border-emerald-800 shadow-md ring-2 ring-emerald-500/40"
+                            : isSelected
+                            ? "bg-emerald-50 text-emerald-950 border-emerald-400 ring-2 ring-emerald-300"
+                            : isWhite
+                            ? "bg-amber-50/70 hover:bg-amber-100/80 text-stone-800 border-amber-200/80"
+                            : "bg-white hover:bg-stone-50 text-stone-800 border-stone-100"
+                        }`}
+                      >
+                        {/* Top indicator: Gregorian day & event dot */}
+                        <div className="w-full flex items-center justify-between px-0.5">
+                          <span
+                            className={`text-[9px] font-mono leading-none ${
+                              item.isToday ? "text-emerald-200" : "text-stone-400"
+                            }`}
+                          >
+                            {item.gregorianDay}
+                          </span>
+                          {hasEvents && (
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                item.isToday ? "bg-amber-300" : "bg-amber-500"
+                              }`}
+                              title={item.hijri.events[0]?.title}
+                            ></span>
+                          )}
+                        </div>
+
+                        {/* Main Hijri Day Number */}
+                        <span
+                          className={`text-sm sm:text-base font-bold font-tajawal leading-none ${
+                            item.isToday ? "text-white font-black" : "text-stone-900"
+                          }`}
+                        >
+                          {item.hijri.day}
+                        </span>
+
+                        {/* Bottom Tag / White Day Indicator */}
+                        <div className="w-full flex items-center justify-center">
+                          {isWhite ? (
+                            <span
+                              className={`text-[8px] font-tajawal px-1 py-0.2 rounded leading-none ${
+                                item.isToday
+                                  ? "bg-emerald-900 text-emerald-200"
+                                  : "bg-amber-100 text-amber-900 font-bold"
+                              }`}
+                            >
+                              أبيض
+                            </span>
+                          ) : (
+                            <span
+                              className={`text-[8px] font-amiri truncate max-w-[42px] leading-none ${
+                                item.isToday ? "text-emerald-100" : "text-stone-400"
+                              }`}
+                            >
+                              {item.hijri.monthName.split(" ")[0]}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+              </div>
+
+              {/* Selected Day Details Card */}
+              {selectedDayInfo && (
+                <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+                    <div>
+                      <span className="text-[11px] text-stone-400 font-tajawal">تفاصيل اليوم المختار</span>
+                      <h4 className="text-base font-bold font-tajawal text-emerald-950">
+                        {selectedDayInfo.dayName} {selectedDayInfo.day} {selectedDayInfo.monthName} {selectedDayInfo.year} هـ
+                      </h4>
+                      <p className="text-xs text-stone-500 font-sans">
+                        الموافق: {selectedDayInfo.gregorianDate.getDate()} {monthNamesAr[selectedDayInfo.gregorianDate.getMonth()]} {selectedDayInfo.gregorianDate.getFullYear()} م
+                      </p>
+                    </div>
+
+                    {selectedDayInfo.isWhiteDay && (
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-900 text-xs font-bold font-tajawal flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>من الأيام البيض (سنة صيامه)</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Events on this day if any */}
+                  {selectedDayInfo.events.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedDayInfo.events.map((ev) => (
+                        <div
+                          key={ev.id}
+                          className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-1"
+                        >
+                          <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm font-tajawal">
+                            <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                            <span>{ev.title}</span>
+                          </div>
+                          <p className="text-xs text-emerald-900/90 font-amiri leading-relaxed">
+                            {ev.description}
+                          </p>
+                          {ev.virtue && (
+                            <p className="text-[11.5px] text-emerald-800 font-amiri bg-white/70 p-2 rounded-lg border border-emerald-100">
+                              ✨ <span className="font-bold">الفضل:</span> {ev.virtue}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-stone-500 font-amiri">
+                      {selectedDayInfo.isSacredMonth
+                        ? "✨ هذا اليوم يقع في أحد الأشهر الحُرُم المعظمة، يستحب فيه الإكثار من الطاعات والذكر والصلاة على النبي ﷺ."
+                        : "يوم مبارك، احرص على المحافظة على صلواتك وأذكارك والورد اليومي."}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Moon Sighting Day Adjustment Setting */}
+              <div className="bg-stone-50 p-3 rounded-2xl border border-stone-200/80 flex items-center justify-between text-xs font-tajawal">
+                <div className="flex items-center gap-2">
+                  <Moon className="w-4 h-4 text-stone-500" />
+                  <span className="text-stone-700">تعديل رؤية الهلال المحلية:</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {[-1, 0, 1].map((adj) => (
+                    <button
+                      key={adj}
+                      onClick={() => saveAdjustment(adj)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                        hijriAdjustment === adj
+                          ? "bg-emerald-700 text-white"
+                          : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-100"
+                      }`}
+                    >
+                      {adj > 0 ? `+${adj} يوم` : adj < 0 ? `${adj} يوم` : "الافتراضي"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* TAB 2: ISLAMIC EVENTS LIST */}
+          {activeTab === "events" && (
+            <div className="space-y-3">
+              <div className="bg-amber-50 p-3 rounded-2xl border border-amber-200/80 text-amber-900 text-xs font-amiri leading-relaxed flex items-start gap-2">
+                <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <span>
+                  أهم المناسبات والأعياد والأيام المباركة في السنة الهجرية وفضائلها الشرعية المعتمدة.
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {ISLAMIC_EVENTS.map((item) => {
+                  const mObj = HIJRI_MONTHS.find((m) => m.number === item.hijriMonth);
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-sm space-y-2 hover:border-emerald-300 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 flex items-center justify-center font-bold text-xs">
+                            {item.hijriDay}
+                          </span>
+                          <div>
+                            <h4 className="text-sm font-bold font-tajawal text-emerald-950">
+                              {item.title}
+                            </h4>
+                            <span className="text-xs text-stone-500 font-amiri">
+                              {item.hijriDayEnd
+                                ? `من ${item.hijriDay} إلى ${item.hijriDayEnd}`
+                                : `${item.hijriDay}`}{" "}
+                              {mObj?.name}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-tajawal ${
+                            item.category === "holiday"
+                              ? "bg-emerald-100 text-emerald-900"
+                              : item.category === "fasting"
+                              ? "bg-amber-100 text-amber-900"
+                              : "bg-purple-100 text-purple-900"
+                          }`}
+                        >
+                          {item.category === "holiday"
+                            ? "عيد ومناسبة"
+                            : item.category === "fasting"
+                            ? "صيام مستحب"
+                            : "ليلة مباركة"}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-stone-600 font-amiri leading-relaxed">
+                        {item.description}
+                      </p>
+
+                      {item.virtue && (
+                        <div className="text-[11.5px] bg-stone-50 p-2 rounded-xl text-emerald-900 font-amiri border border-stone-100">
+                          ✨ <span className="font-bold">الفضل:</span> {item.virtue}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: DATE CONVERTER */}
+          {activeTab === "converter" && (
+            <div className="space-y-4">
+              
+              {/* Conversion Mode Switcher */}
+              <div className="flex bg-stone-100 p-1 rounded-2xl">
+                <button
+                  onClick={() => setConvMode("g2h")}
+                  className={`flex-1 py-2 text-xs font-bold font-tajawal rounded-xl transition-all cursor-pointer ${
+                    convMode === "g2h"
+                      ? "bg-emerald-700 text-white shadow"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  من ميلادي إلى هجري
+                </button>
+                <button
+                  onClick={() => setConvMode("h2g")}
+                  className={`flex-1 py-2 text-xs font-bold font-tajawal rounded-xl transition-all cursor-pointer ${
+                    convMode === "h2g"
+                      ? "bg-emerald-700 text-white shadow"
+                      : "text-stone-600 hover:text-stone-900"
+                  }`}
+                >
+                  من هجري إلى ميلادي
+                </button>
+              </div>
+
+              {/* Form Input based on mode */}
+              <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-3">
+                {convMode === "g2h" ? (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold font-tajawal text-stone-700 block">
+                      اختر التاريخ الميلادي:
+                    </label>
+                    <input
+                      type="date"
+                      value={convGDate}
+                      onChange={(e) => setConvGDate(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-stone-300 text-sm font-sans focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="text-xs font-bold font-tajawal text-stone-700 block">
+                      حدد التاريخ الهجري:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <span className="text-[10px] text-stone-500 block mb-1">اليوم</span>
+                        <select
+                          value={convHDay}
+                          onChange={(e) => setConvHDay(parseInt(e.target.value, 10))}
+                          className="w-full px-2 py-2 rounded-xl border border-stone-300 text-xs font-tajawal"
+                        >
+                          {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-stone-500 block mb-1">الشهر</span>
+                        <select
+                          value={convHMonth}
+                          onChange={(e) => setConvHMonth(parseInt(e.target.value, 10))}
+                          className="w-full px-2 py-2 rounded-xl border border-stone-300 text-xs font-tajawal"
+                        >
+                          {HIJRI_MONTHS.map((m) => (
+                            <option key={m.number} value={m.number}>
+                              {m.number} - {m.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-stone-500 block mb-1">السنة الهجرية</span>
+                        <select
+                          value={convHYear}
+                          onChange={(e) => setConvHYear(parseInt(e.target.value, 10))}
+                          className="w-full px-2 py-2 rounded-xl border border-stone-300 text-xs font-tajawal"
+                        >
+                          {Array.from({ length: 20 }, (_, i) => 1440 + i).map((y) => (
+                            <option key={y} value={y}>
+                              {y} هـ
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Conversion Result Display */}
+              {convertedResult && (
+                <div className="bg-gradient-to-r from-emerald-900 to-stone-900 text-white p-4 rounded-2xl border border-emerald-700 shadow-md space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-300 text-xs font-bold font-tajawal">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>نتيجة التحويل الدقيقة</span>
+                  </div>
+
+                  {convMode === "g2h" ? (
+                    <div>
+                      <p className="text-xl font-bold font-tajawal text-white">
+                        {(convertedResult as HijriDateInfo).dayName} {(convertedResult as HijriDateInfo).day}{" "}
+                        {(convertedResult as HijriDateInfo).monthName} {(convertedResult as HijriDateInfo).year} هـ
+                      </p>
+                      <p className="text-xs text-stone-300 font-sans mt-0.5">
+                        الموافق: {convGDate}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xl font-bold font-tajawal text-white">
+                        {((convertedResult as any).gregorianDate as Date).toLocaleDateString("ar-EG", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <p className="text-xs text-emerald-300 font-amiri mt-0.5">
+                        الموافق: {convHDay} {HIJRI_MONTHS.find((m) => m.number === convHMonth)?.name}{" "}
+                        {convHYear} هـ
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            </div>
+          )}
+
+        </div>
+
+        {/* Modal Footer */}
+        <div className="bg-stone-50 px-4 py-3 border-t border-stone-200 flex items-center justify-between">
+          <span className="text-[11px] text-stone-500 font-tajawal">
+            تقويم أم القرى المعتمد • {todayHijri.year} هـ
+          </span>
+
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs font-tajawal cursor-pointer transition-all active:scale-95 shadow"
+          >
+            إغلاق
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};

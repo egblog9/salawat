@@ -1,5 +1,5 @@
 import React from "react";
-import { Heart, Users, Share2, Menu } from "lucide-react";
+import { Heart, Users, Share2, Menu, Square, Volume2 } from "lucide-react";
 import { SiteStats } from "../types";
 import { APP_SECTIONS } from "../config/navigation";
 
@@ -9,6 +9,7 @@ interface HeaderProps {
   totalSalawat: number;
   siteStats: SiteStats;
   isPlaying: boolean;
+  onStopAllAudio?: () => void;
   onOpenShareModal?: () => void;
   onOpenInstallModal?: () => void;
   canInstall?: boolean;
@@ -20,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   siteStats,
   isPlaying,
+  onStopAllAudio,
   onOpenShareModal,
   isStandalone = false,
 }) => {
@@ -42,8 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
               />
               {isPlaying && (
                 <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-rose-500"></span>
                 </span>
               )}
             </div>
@@ -66,6 +68,20 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Action Badges & Live Stats */}
           <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* Global STOP AUDIO Button (Always visible when sound is playing) */}
+            {isPlaying && onStopAllAudio && (
+              <button
+                id="header-stop-audio-btn"
+                type="button"
+                onClick={onStopAllAudio}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-lg shadow-rose-950/50 transition-all active:scale-95 flex-shrink-0 cursor-pointer animate-pulse ring-2 ring-rose-400"
+                title="إيقاف كل الأصوات والتلاوات حالاً"
+              >
+                <Square className="w-3.5 h-3.5 fill-white" />
+                <span className="font-tajawal font-bold text-xs">إيقاف الصوت</span>
+              </button>
+            )}
+
             {/* Live Stats Capsule */}
             <div className="hidden sm:flex items-center gap-3 bg-stone-900/80 border border-emerald-800/40 px-3.5 py-1.5 rounded-2xl shadow-inner text-xs">
               <div className="flex items-center gap-1.5 text-stone-300">

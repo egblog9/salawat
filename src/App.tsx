@@ -19,12 +19,18 @@ import { StatsHistoryModal } from "./components/StatsHistoryModal";
 import { ProfileSettingsModal } from "./components/ProfileSettingsModal";
 import { TasbeehModal } from "./components/TasbeehModal";
 import { OverlayAndVolumeModal } from "./components/OverlayAndVolumeModal";
+import { QuranModal } from "./components/QuranModal";
+import { HijriCalendarModal } from "./components/HijriCalendarModal";
+import { PrayerTrackerModal } from "./components/PrayerTrackerModal";
+import { ZakatCalculatorModal } from "./components/ZakatCalculatorModal";
 import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS, REMINDER_VOICE_FORMULAS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats, ReminderVoiceFormula } from "./types";
-import { sheikhAudioManager, reminderAudioManager, SEQUENTIAL_AZKAR_LIST } from "./utils/audio";
+import { sheikhAudioManager, reminderAudioManager, SEQUENTIAL_AZKAR_LIST, stopAllAppAudio } from "./utils/audio";
 import { systemNotificationManager } from "./utils/systemNotifications";
 import { loudAlarmAudioService } from "./utils/alarmAudio";
 import { backgroundTimerService } from "./utils/backgroundTimer";
+import { quranService } from "./utils/quranService";
+import { SURAH_LIST } from "./data/quranData";
 
 export default function App() {
   // Navigation & Modal States
@@ -38,6 +44,37 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isTasbeehModalOpen, setIsTasbeehModalOpen] = useState<boolean>(false);
   const [isOverlayModalOpen, setIsOverlayModalOpen] = useState<boolean>(false);
+  const [isQuranModalOpen, setIsQuranModalOpen] = useState<boolean>(false);
+
+  // Quran Audio Recitation Global State
+  const [quranPlayingInfo, setQuranPlayingInfo] = useState<{
+    isPlaying: boolean;
+    surahNum: number;
+    ayahNum: number;
+    reciterName: string;
+    surahName: string;
+  } | null>(null);
+
+  const [isReminderAudioPlaying, setIsReminderAudioPlaying] = useState<boolean>(false);
+
+  // Synchronize Quran player events
+  useEffect(() => {
+    quranService.setOnAyahChange((surahNum, ayahNum, playing) => {
+      const sMeta = SURAH_LIST.find((s) => s.number === surahNum);
+      const reciter = quranService.getSelectedReciter();
+      setQuranPlayingInfo({
+        isPlaying: playing,
+        surahNum,
+        ayahNum,
+        reciterName: reciter?.name || "الشيخ",
+        surahName: sMeta?.name || `سورة ${surahNum}`,
+      });
+    });
+
+    quranService.setOnSurahEnded(() => {
+      setQuranPlayingInfo(null);
+    });
+  }, []);
 
   // Selected City for Prayer Times
   const [selectedCity, setSelectedCity] = useState<string>(() => {
@@ -475,26 +512,53 @@ export default function App() {
     });
   };
 
+  const isAnyAudioActive =
+    isPlaying ||
+    (quranPlayingInfo?.isPlaying ?? false) ||
+    isReminderAudioPlaying ||
+    isAlarmRinging;
+
   const handlePause = () => {
-    sheikhAudioManager.pause();
-    setIsPlaying(false);
+    if (quranPlayingInfo?.isPlaying) {
+      quranService.pauseAudio();
+    } else {
+      sheikhAudioManager.pause();
+      setIsPlaying(false);
+    }
   };
 
   const handleResume = () => {
-    sheikhAudioManager.resume();
-    setIsPlaying(true);
+    if (quranPlayingInfo && !quranPlayingInfo.isPlaying) {
+      quranService.resumeAudio();
+    } else {
+      sheikhAudioManager.resume();
+      setIsPlaying(true);
+    }
   };
 
-  const handleStop = () => {
-    sheikhAudioManager.stop();
+  const handleStopAllAudio = () => {
+    stopAllAppAudio();
+    try {
+      quranService.stopAudio();
+    } catch (e) {}
+    try {
+      loudAlarmAudioService.stopAlarm();
+    } catch (e) {}
     setIsPlaying(false);
+    setQuranPlayingInfo(null);
+    setIsReminderAudioPlaying(false);
+    setIsAlarmRinging(false);
+    setShowReminderToast(false);
     setAudioProgress(0);
     setCurrentTrack(null);
   };
 
-  // Handle Feature selection from 5 squircle grid
+  // Handle Feature selection from squircle grid
   const handleSelectFeature = (featureId: string) => {
     switch (featureId) {
+      case "quran":
+        setIsQuranModalOpen(true);
+        break;
       case "azkar":
         setIsAzkarModalOpen(true);
         break;
@@ -536,7 +600,11 @@ export default function App() {
       {/* Voice Reminder Global Floating Toast Notification */}
       <ReminderToast
         isVisible={showReminderToast}
-        onClose={() => setShowReminderToast(false)}
+        onClose={() => {
+          setShowReminderToast(false);
+          setIsReminderAudioPlaying(false);
+        }}
+        onStopAudio={handleStopAllAudio}
         isMuted={soundMuted}
         onQuickTasbeeh={handleIncrementTasbeeh}
         arabicText={activeDhikrText}
@@ -572,6 +640,12 @@ export default function App() {
       <ShareAppModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
+      />
+
+      {/* Holy Quran Modal (114 Surahs, authentic Uthmani text, real sheikh reciters, offline capable) */}
+      <QuranModal
+        isOpen={isQuranModalOpen}
+        onClose={() => setIsQuranModalOpen(false)}
       />
 
       {/* Fajr Loud Alarm Modal (with wake-up challenge puzzle) */}
@@ -670,47 +744,17 @@ export default function App() {
         onToggleVolumeBoost={(enabled) => setVolumeBoostEnabled(enabled)}
       />
 
-      {/* Top Application Header (Bell, Title + Mosque Dome, Date) */}
+      {/* Top Application Header (Bell, Title + Mosque Dome, Date, Stop Audio button) */}
       <SalawatHeader
         notificationsEnabled={soundReminderEnabled || systemNotificationsEnabled}
+        isPlaying={isAnyAudioActive}
+        onStopAllAudio={handleStopAllAudio}
         onToggleNotifications={() => setIsProfileModalOpen(true)}
         onOpenNotifications={() => setIsOverlayModalOpen(true)}
       />
 
       {/* Main Single-Screen Streamlined Container strictly matching mockup */}
       <main className="flex-1 max-w-md w-full mx-auto px-4 pt-3 pb-8 space-y-4">
-        
-        {/* Quick Permission & Volume Boost Banner */}
-        <div className="bg-gradient-to-r from-stone-900 via-emerald-950 to-stone-900 text-white p-3.5 rounded-2xl border border-emerald-500/40 shadow-sm flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm font-bold">
-              ⚡
-            </span>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold font-tajawal text-emerald-200">
-                  التذكير التلقائي المتتابع
-                </span>
-                <span className="text-[10px] bg-emerald-900 text-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                  كل {soundReminderInterval} د
-                </span>
-              </div>
-              <span className="text-[10.5px] text-stone-300 font-amiri block">
-                {selectedVoice.id === "sequential_rotating_dhikr"
-                  ? "سبحان الله ➜ الحمد لله ➜ الله أكبر..."
-                  : selectedVoice.shortName}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsOverlayModalOpen(true)}
-            className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-bold text-xs shadow cursor-pointer transition-all active:scale-95 flex items-center gap-1 whitespace-nowrap"
-          >
-            <span>إذن الظهور والصوت ⚙️</span>
-          </button>
-        </div>
         
         {/* 1. Green Dome Hero Card with Interactive Salawat Counter */}
         <SalawatHeroCard
@@ -749,14 +793,28 @@ export default function App() {
 
       </main>
 
-      {/* Floating Audio Bar (Active when Sheikh recitation audio is playing) */}
+      {/* Floating Audio Bar (Active when recitation / audio is playing) */}
       <AudioFloatingBar
-        isPlaying={isPlaying}
+        isPlaying={isPlaying || (quranPlayingInfo?.isPlaying ?? false)}
         currentTrack={currentTrack}
+        customTitle={
+          quranPlayingInfo
+            ? `سورة ${quranPlayingInfo.surahName} • آية ${quranPlayingInfo.ayahNum}`
+            : isReminderAudioPlaying
+            ? activeDhikrTitle
+            : null
+        }
+        customSubtitle={
+          quranPlayingInfo
+            ? `بصوت: ${quranPlayingInfo.reciterName}`
+            : isReminderAudioPlaying
+            ? activeDhikrText
+            : null
+        }
         progress={audioProgress}
         onPause={handlePause}
         onResume={handleResume}
-        onStop={handleStop}
+        onStop={handleStopAllAudio}
         currentRepeat={currentRepeat}
         totalRepeats={totalRepeats}
         volume={volume}

@@ -211,7 +211,7 @@ class LoudAlarmAudioService {
     }
   }
 
-  // Stop the Alarm (ONLY called when challenge is verified!)
+  // Stop the Alarm (ONLY called when challenge is verified or global stop!)
   public stopLoudAlarm() {
     this.isAlarmActive = false;
     this.releaseWakeLock();
@@ -241,6 +241,10 @@ class LoudAlarmAudioService {
         navigator.vibrate(0);
       } catch (e) {}
     }
+  }
+
+  public stopAlarm() {
+    this.stopLoudAlarm();
   }
 
   public isActive(): boolean {

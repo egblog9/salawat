@@ -14,7 +14,9 @@ import {
 export interface PrayerItem {
   id: string;
   name: string;
-  time: string; // e.g. "04:20"
+  displayTime: string; // e.g. "4:20"
+  hours24: number;
+  minutes: number;
   icon: "fajr" | "sunrise" | "dhuhr" | "asr" | "maghrib" | "isha";
 }
 
@@ -28,33 +30,52 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
   onOpenCitySelector,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
-  const [countdown, setCountdown] = useState<string>("02:35:47");
+  const [countdown, setCountdown] = useState<string>("00:00:00");
+  const [activePrayerId, setActivePrayerId] = useState<string>("fajr");
 
-  // Sample or Calculated Prayer times for Cairo
+  // Calculated Cairo Prayer times (24h format for exact calculations)
   const prayerList: PrayerItem[] = [
-    { id: "fajr", name: "الفجر", time: "4:20", icon: "fajr" },
-    { id: "sunrise", name: "الشروق", time: "5:50", icon: "sunrise" },
-    { id: "dhuhr", name: "الظهر", time: "12:45", icon: "dhuhr" },
-    { id: "asr", name: "العصر", time: "4:15", icon: "asr" },
-    { id: "maghrib", name: "المغرب", time: "7:35", icon: "maghrib" },
-    { id: "isha", name: "العشاء", time: "8:55", icon: "isha" },
+    { id: "fajr", name: "الفجر", displayTime: "4:20", hours24: 4, minutes: 20, icon: "fajr" },
+    { id: "sunrise", name: "الشروق", displayTime: "5:50", hours24: 5, minutes: 50, icon: "sunrise" },
+    { id: "dhuhr", name: "الظهر", displayTime: "12:45", hours24: 12, minutes: 45, icon: "dhuhr" },
+    { id: "asr", name: "العصر", displayTime: "4:15", hours24: 16, minutes: 15, icon: "asr" },
+    { id: "maghrib", name: "المغرب", displayTime: "7:35", hours24: 19, minutes: 35, icon: "maghrib" },
+    { id: "isha", name: "العشاء", displayTime: "8:55", hours24: 20, minutes: 55, icon: "isha" },
   ];
 
-  // Active highlighted next prayer (Fajr in mockup)
-  const activePrayerId = "fajr";
-
-  // Live countdown ticker
+  // Dynamic next prayer & live countdown ticker
   useEffect(() => {
-    const updateCountdown = () => {
+    const updateNextPrayerAndCountdown = () => {
       const now = new Date();
-      // Target next fajr at 4:20 AM tomorrow or today
-      const target = new Date();
-      target.setHours(4, 20, 0, 0);
-      if (now.getTime() > target.getTime()) {
-        target.setDate(target.getDate() + 1);
+      const currentHours = now.getHours();
+      const currentMinutes = now.getMinutes();
+      const currentSeconds = now.getSeconds();
+      const currentTotalSeconds = currentHours * 3600 + currentMinutes * 60 + currentSeconds;
+
+      // Find the next upcoming prayer today
+      let nextPrayer: PrayerItem | null = null;
+      let targetDate = new Date();
+
+      for (const prayer of prayerList) {
+        const prayerTotalSeconds = prayer.hours24 * 3600 + prayer.minutes * 60;
+        if (prayerTotalSeconds > currentTotalSeconds) {
+          nextPrayer = prayer;
+          targetDate.setHours(prayer.hours24, prayer.minutes, 0, 0);
+          break;
+        }
       }
-      const diffMs = target.getTime() - now.getTime();
-      const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+
+      // If all prayers today have passed (after Isha), next prayer is Fajr tomorrow morning
+      if (!nextPrayer) {
+        nextPrayer = prayerList[0]; // Fajr
+        targetDate.setDate(targetDate.getDate() + 1);
+        targetDate.setHours(prayerList[0].hours24, prayerList[0].minutes, 0, 0);
+      }
+
+      setActivePrayerId(nextPrayer.id);
+
+      const diffMs = Math.max(0, targetDate.getTime() - now.getTime());
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
       const seconds = Math.floor((diffMs / 1000) % 60);
 
@@ -62,8 +83,8 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
       setCountdown(formatted);
     };
 
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
+    updateNextPrayerAndCountdown();
+    const interval = setInterval(updateNextPrayerAndCountdown, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -132,7 +153,7 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
                 </span>
 
                 <span className={`text-xs sm:text-sm font-black font-tajawal ${isActive ? "text-white" : "text-stone-800"}`}>
-                  {prayer.time}
+                  {prayer.displayTime}
                 </span>
               </div>
 
