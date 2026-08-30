@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Volume2,
   VolumeX,
@@ -15,10 +15,20 @@ import {
   Music,
   Radio,
   Heart,
+  Moon,
+  Calendar,
+  Sparkles,
+  CalendarCheck,
 } from "lucide-react";
 import { REMINDER_VOICE_FORMULAS } from "../data/salawatData";
 import { ReminderVoiceFormula } from "../types";
 import { Layers, Sliders, Volume2 as VolumeBoostIcon } from "lucide-react";
+import { getFullDateInfo } from "../utils/hijri";
+import {
+  fastingReminderManager,
+  FastingReminderConfig,
+  DEFAULT_FASTING_CONFIG,
+} from "../utils/fastingReminderManager";
 
 interface AudioReminderCardProps {
   enabled: boolean;
@@ -41,6 +51,7 @@ interface AudioReminderCardProps {
   onOpenShareModal?: () => void;
   onOpenOverlaySettings?: () => void;
   volumeBoostEnabled?: boolean;
+  onOpenHijriModal?: () => void;
 }
 
 export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
@@ -64,6 +75,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
   onOpenShareModal,
   onOpenOverlaySettings,
   volumeBoostEnabled = true,
+  onOpenHijriModal,
 }) => {
   const [showPermissionHint, setShowPermissionHint] = useState<boolean>(false);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("all");
@@ -71,6 +83,41 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
   const [isCustomMode, setIsCustomMode] = useState<boolean>(() => {
     return ![1, 2, 5, 10, 15, 20, 30, 45, 60, 120].includes(intervalMinutes);
   });
+
+  // Fasting Reminder Configuration State (Monday & Thursday + White Days)
+  const [fastingConfig, setFastingConfig] = useState<FastingReminderConfig>(() =>
+    fastingReminderManager.getConfig()
+  );
+  const [isTestingFasting, setIsTestingFasting] = useState<boolean>(false);
+  const [fastingTestSent, setFastingTestSent] = useState<boolean>(false);
+
+  // Live Hijri Date & Status for Fasting
+  const todayDateInfo = useMemo(() => getFullDateInfo(new Date()), []);
+  const tomorrowDateInfo = useMemo(
+    () => getFullDateInfo(new Date(Date.now() + 86400000)),
+    []
+  );
+  const fastingStatus = useMemo(
+    () => fastingReminderManager.checkFastingDayStatus(new Date(), fastingConfig),
+    [fastingConfig]
+  );
+
+  const updateFastingConfig = (partial: Partial<FastingReminderConfig>) => {
+    const updated = { ...fastingConfig, ...partial };
+    setFastingConfig(updated);
+    fastingReminderManager.saveConfig(updated);
+  };
+
+  const handleTestFasting = async () => {
+    setIsTestingFasting(true);
+    try {
+      await fastingReminderManager.sendFastingNotification(fastingStatus);
+      setFastingTestSent(true);
+      setTimeout(() => setFastingTestSent(false), 4000);
+    } finally {
+      setIsTestingFasting(false);
+    }
+  };
 
   const intervals = [
     { value: 1, label: "دقيقة واحدة", shortLabel: "1 دقيقة" },
@@ -604,6 +651,202 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                 <Send className="w-3.5 h-3.5" />
                 <span>{isTestingNotification ? "جاري الإرسال..." : "إرسال إشعار تجريبي لشريط الهاتف"}</span>
               </button>
+            </div>
+
+            {/* Fasting Reminder (Monday & Thursday + White Days) Card */}
+            <div className="bg-gradient-to-br from-emerald-950/70 via-stone-900 to-stone-950 p-4 sm:p-5 rounded-2xl border border-emerald-600/40 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                    <Moon className="w-5 h-5 text-amber-300" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-white font-tajawal flex items-center gap-1.5">
+                        <span>التذكير بصيام الإثنين والخميس والأيام البيض</span>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      </h4>
+                      {fastingConfig.mondayThursdayEnabled && (
+                        <span className="text-[10px] bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
+                          مفعّل بالتقويم الهجري
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-stone-300 mt-0.5 font-tajawal">
+                      تنبيه أسبوعي ذكي بالتقويم الهجري المدمج لصيام السنن ونيل الأجر
+                    </p>
+                  </div>
+                </div>
+
+                {/* Main Fasting Toggle */}
+                <button
+                  id="toggle-fasting-reminder-btn"
+                  type="button"
+                  role="switch"
+                  aria-checked={fastingConfig.mondayThursdayEnabled}
+                  aria-label="تفعيل التذكير بصيام الإثنين والخميس"
+                  onClick={() =>
+                    updateFastingConfig({
+                      mondayThursdayEnabled: !fastingConfig.mondayThursdayEnabled,
+                    })
+                  }
+                  className={`relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    fastingConfig.mondayThursdayEnabled ? "bg-emerald-500" : "bg-stone-700"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out flex items-center justify-center text-[10px] font-bold text-stone-800 ${
+                      fastingConfig.mondayThursdayEnabled
+                        ? "-translate-x-6 bg-stone-950 text-emerald-400"
+                        : "translate-x-0 bg-stone-300"
+                    }`}
+                  >
+                    {fastingConfig.mondayThursdayEnabled ? (
+                      <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                    ) : (
+                      ""
+                    )}
+                  </span>
+                </button>
+              </div>
+
+              {/* Integrated Hijri Calendar Live Info Banner */}
+              <div className="p-3 rounded-xl bg-stone-950/70 border border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <span className="text-stone-400">التقويم الهجري المعتمد اليوم: </span>
+                    <strong className="text-amber-300 font-amiri text-sm mr-1">
+                      {todayDateInfo.hijriDateStr} ({todayDateInfo.dayName})
+                    </strong>
+                  </div>
+                </div>
+                {onOpenHijriModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenHijriModal}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 font-bold cursor-pointer self-start sm:self-center"
+                  >
+                    <CalendarCheck className="w-3.5 h-3.5" />
+                    <span>عرض التقويم الهجري الكامل</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Fasting Options Details if Enabled */}
+              {fastingConfig.mondayThursdayEnabled && (
+                <div className="space-y-3 pt-2 border-t border-stone-800/80 animate-in fade-in">
+                  {/* White Days Sub-Toggle */}
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-stone-900/80 border border-stone-800">
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-stone-200 block">
+                        تضمين تذكير الأيام البيض (13 و 14 و 15 من كل شهر هجري)
+                      </span>
+                      <span className="text-[10.5px] text-stone-400">
+                        صيام ثلاثة أيام من كل شهر تعدل صيام الدهر كله
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateFastingConfig({
+                          whiteDaysEnabled: !fastingConfig.whiteDaysEnabled,
+                        })
+                      }
+                      className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                        fastingConfig.whiteDaysEnabled ? "bg-amber-500" : "bg-stone-700"
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform ${
+                          fastingConfig.whiteDaysEnabled ? "-translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Timing of Fasting Reminder */}
+                  <div>
+                    <label className="text-[11px] font-bold text-emerald-300 block mb-1.5">
+                      موعد إرسال إشعار التذكير بالصيام:
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                      {[
+                        {
+                          id: "eve",
+                          label: "مساء اليوم السابق (8:00 م)",
+                          desc: "لتبييت النية والاستعداد للسحور",
+                        },
+                        {
+                          id: "fajr",
+                          label: "وقت السحور والفجر (4:00 ص)",
+                          desc: "تنبيه قبل أذان الفجر",
+                        },
+                        {
+                          id: "morning",
+                          label: "صباح يوم الصيام (7:30 ص)",
+                          desc: "تذكير في الصباح الباكر",
+                        },
+                      ].map((timing) => (
+                        <button
+                          key={timing.id}
+                          type="button"
+                          onClick={() =>
+                            updateFastingConfig({
+                              reminderTiming: timing.id as any,
+                            })
+                          }
+                          className={`p-2 rounded-xl text-right transition-all border cursor-pointer ${
+                            fastingConfig.reminderTiming === timing.id
+                              ? "bg-emerald-900/90 border-emerald-400 text-white shadow-sm"
+                              : "bg-stone-900/70 border-stone-800 text-stone-300 hover:bg-stone-800"
+                          }`}
+                        >
+                          <div className="text-xs font-bold font-tajawal flex items-center justify-between">
+                            <span>{timing.label}</span>
+                            {fastingConfig.reminderTiming === timing.id && (
+                              <span className="text-emerald-400">✓</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-stone-400 block mt-0.5 truncate">
+                            {timing.desc}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Prophetic Hadith Quote */}
+                  <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-amber-200/90 text-xs">
+                    <p className="font-amiri text-xs sm:text-sm leading-relaxed text-amber-100">
+                      قال رسول الله ﷺ: «تُعْرَضُ الأَعْمَالُ يَوْمَ الاِثْنَيْنِ وَالْخَمِيسِ فَأُحِبُّ أَنْ يُعْرَضَ عَمَلِي وَأَنَا صَائِمٌ» (رواه الترمذي).
+                    </p>
+                  </div>
+
+                  {/* Test Fasting Notification Button */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className="text-[11px] text-stone-400">
+                      {fastingTestSent ? (
+                        <span className="text-emerald-400 font-bold">
+                          ✓ تم إرسال إشعار تذكير الصيام لشريط هاتفك بنجاح!
+                        </span>
+                      ) : (
+                        "تجربة وصول إشعار صيام الإثنين/الخميس:"
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleTestFasting}
+                      disabled={isTestingFasting}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 border border-emerald-600/40 text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all flex-shrink-0"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>{isTestingFasting ? "جاري الإرسال..." : "إشعار تجريبي للصيام"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Notification Messages Samples */}

@@ -21,6 +21,11 @@ import {
   getMonthCalendarDays,
   HijriDateInfo,
 } from "../utils/hijriCalendar";
+import {
+  fastingReminderManager,
+  FastingReminderConfig,
+} from "../utils/fastingReminderManager";
+import { Bell, Sparkles, Send } from "lucide-react";
 
 interface HijriCalendarModalProps {
   isOpen: boolean;
@@ -39,6 +44,28 @@ export const HijriCalendarModal: React.FC<HijriCalendarModalProps> = ({
   const [hijriAdjustment, setHijriAdjustment] = useState<number>(() => {
     return parseInt(localStorage.getItem("hijri_day_offset") || "0", 10);
   });
+
+  const [fastingConfig, setFastingConfig] = useState<FastingReminderConfig>(() =>
+    fastingReminderManager.getConfig()
+  );
+  const [fastingTestStatus, setFastingTestStatus] = useState<string | null>(null);
+
+  const updateFastingConfig = (partial: Partial<FastingReminderConfig>) => {
+    const updated = { ...fastingConfig, ...partial };
+    setFastingConfig(updated);
+    fastingReminderManager.saveConfig(updated);
+  };
+
+  const handleTestFasting = async () => {
+    setFastingTestStatus("sending");
+    try {
+      await fastingReminderManager.sendFastingNotification();
+      setFastingTestStatus("sent");
+      setTimeout(() => setFastingTestStatus(null), 3000);
+    } catch {
+      setFastingTestStatus(null);
+    }
+  };
 
   // Converter Form State
   const [convMode, setConvMode] = useState<"g2h" | "h2g">("g2h");
@@ -444,6 +471,67 @@ export const HijriCalendarModal: React.FC<HijriCalendarModalProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Fasting Reminder (Monday & Thursday + White Days) in Hijri Calendar */}
+              <div className="bg-gradient-to-r from-emerald-50 to-amber-50/50 p-4 rounded-3xl border border-emerald-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-emerald-700 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Bell className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold font-tajawal text-emerald-950 flex items-center gap-1.5">
+                        <span>تذكير صيام الإثنين والخميس والأيام البيض</span>
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      </h4>
+                      <p className="text-[11px] text-emerald-800/80 font-tajawal">
+                        تنبيه تلقائي حسب التقويم الهجري المعتمد
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={fastingConfig.mondayThursdayEnabled}
+                    onClick={() =>
+                      updateFastingConfig({
+                        mondayThursdayEnabled: !fastingConfig.mondayThursdayEnabled,
+                      })
+                    }
+                    className={`w-12 h-6 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                      fastingConfig.mondayThursdayEnabled ? "bg-emerald-700" : "bg-stone-300"
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${
+                        fastingConfig.mondayThursdayEnabled ? "-translate-x-6" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {fastingConfig.mondayThursdayEnabled && (
+                  <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between text-[11px] font-tajawal">
+                    <span className="text-stone-600">
+                      {fastingTestStatus === "sent" ? (
+                        <span className="text-emerald-700 font-bold">✓ تم إرسال التنبيه التجريبي للهاتف!</span>
+                      ) : (
+                        "التذكير مفعّل (ليلة الصيام وفجرها)"
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleTestFasting}
+                      disabled={fastingTestStatus === "sending"}
+                      className="px-3 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[10.5px] flex items-center gap-1 cursor-pointer"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>{fastingTestStatus === "sending" ? "جاري الإرسال..." : "إشعار تجريبي"}</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
             </div>

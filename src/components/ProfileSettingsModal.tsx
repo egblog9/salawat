@@ -1,8 +1,28 @@
 import React, { useState } from "react";
-import { X, Volume2, ShieldCheck, Moon, Bell, Radio, ExternalLink, Play, Check, Layers, Sliders, Clock } from "lucide-react";
+import {
+  X,
+  Volume2,
+  ShieldCheck,
+  Moon,
+  Bell,
+  Radio,
+  ExternalLink,
+  Play,
+  Check,
+  Layers,
+  Sliders,
+  Clock,
+  Calendar,
+  Sparkles,
+} from "lucide-react";
 import { REMINDER_VOICE_FORMULAS } from "../data/salawatData";
 import { ReminderVoiceFormula } from "../types";
 import { reminderAudioManager } from "../utils/audio";
+import {
+  fastingReminderManager,
+  FastingReminderConfig,
+} from "../utils/fastingReminderManager";
+import { getFullDateInfo } from "../utils/hijri";
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
@@ -45,6 +65,18 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
 }) => {
   const [testingVoiceId, setTestingVoiceId] = useState<string | null>(null);
   const [customIntervalInput, setCustomIntervalInput] = useState<string>("");
+
+  const [fastingConfig, setFastingConfig] = useState<FastingReminderConfig>(() =>
+    fastingReminderManager.getConfig()
+  );
+
+  const updateFastingConfig = (partial: Partial<FastingReminderConfig>) => {
+    const updated = { ...fastingConfig, ...partial };
+    setFastingConfig(updated);
+    fastingReminderManager.saveConfig(updated);
+  };
+
+  const todayHijri = getFullDateInfo(new Date());
 
   const presetIntervals = [
     { value: 1, label: "دقيقة واحدة" },
@@ -333,6 +365,105 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Fasting Reminder Settings Section (Monday & Thursday + White Days) */}
+          <div className="bg-white p-4 rounded-2xl border border-stone-100 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center">
+                  <Moon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold font-tajawal text-stone-800 flex items-center gap-1.5">
+                    <span>التذكير بصيام الإثنين والخميس والأيام البيض</span>
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                  </h4>
+                  <span className="text-[10px] text-stone-400 font-tajawal">
+                    بالتقويم الهجري المعتمد: {todayHijri.hijriDateStr}
+                  </span>
+                </div>
+              </div>
+
+              {/* Main Toggle */}
+              <button
+                type="button"
+                onClick={() =>
+                  updateFastingConfig({
+                    mondayThursdayEnabled: !fastingConfig.mondayThursdayEnabled,
+                  })
+                }
+                className={`w-12 h-6 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                  fastingConfig.mondayThursdayEnabled ? "bg-[#2F5241]" : "bg-stone-200"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white shadow transform transition-transform ${
+                    fastingConfig.mondayThursdayEnabled ? "-translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {fastingConfig.mondayThursdayEnabled && (
+              <div className="space-y-2.5 pt-2 border-t border-stone-100 animate-in fade-in">
+                {/* White Days Option */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-stone-50 border border-stone-200/70">
+                  <div>
+                    <span className="text-[11px] font-bold font-tajawal text-stone-700 block">
+                      تذكير الأيام البيض (13، 14، 15 هجرياً)
+                    </span>
+                    <span className="text-[10px] text-stone-500 font-tajawal">
+                      صيام ثلاثة أيام من كل شهر
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateFastingConfig({
+                        whiteDaysEnabled: !fastingConfig.whiteDaysEnabled,
+                      })
+                    }
+                    className={`w-9 h-5 rounded-full p-0.5 transition-colors cursor-pointer flex items-center ${
+                      fastingConfig.whiteDaysEnabled ? "bg-[#2F5241]" : "bg-stone-200"
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white shadow transform transition-transform ${
+                        fastingConfig.whiteDaysEnabled ? "-translate-x-4" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Timing selector */}
+                <div>
+                  <label className="text-[10.5px] text-stone-500 font-tajawal block mb-1">
+                    توقيت إرسال الإشعار:
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { id: "eve", label: "مساء اليوم السابق (8 م)" },
+                      { id: "fajr", label: "وقت السحور (4 ص)" },
+                      { id: "morning", label: "صباح اليوم (7:30 ص)" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => updateFastingConfig({ reminderTiming: t.id as any })}
+                        className={`py-1.5 px-1 rounded-xl text-[10.5px] font-bold font-tajawal transition-all border cursor-pointer ${
+                          fastingConfig.reminderTiming === t.id
+                            ? "bg-[#2F5241] text-white border-[#2F5241]"
+                            : "bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Background Keep Alive Toggle */}

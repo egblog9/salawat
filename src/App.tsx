@@ -39,6 +39,7 @@ import { systemNotificationManager } from "./utils/systemNotifications";
 import { loudAlarmAudioService } from "./utils/alarmAudio";
 import { backgroundTimerService } from "./utils/backgroundTimer";
 import { quranService } from "./utils/quranService";
+import { fastingReminderManager } from "./utils/fastingReminderManager";
 import { SURAH_LIST } from "./data/quranData";
 
 export default function App() {
@@ -355,6 +356,11 @@ export default function App() {
       ) {
         setLastTriggeredDate(todayDateStr);
         triggerFajrAlarm();
+      }
+
+      // Check Fasting Reminder (Monday & Thursday + White Days using Integrated Hijri Calendar)
+      if (fastingReminderManager.shouldTriggerNow(now)) {
+        fastingReminderManager.sendFastingNotification();
       }
 
       // Check Voice Reminder

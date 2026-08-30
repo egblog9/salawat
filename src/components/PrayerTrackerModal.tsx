@@ -80,11 +80,43 @@ export const PrayerTrackerModal: React.FC<PrayerTrackerModalProps> = ({
     return new Date().toISOString().split("T")[0];
   });
 
+  // Helper to normalize daily log object
+  const normalizeDayLog = (raw: any, dateStr: string): DailyPrayerLog => {
+    return {
+      date: dateStr,
+      prayers: {
+        fajr: raw?.prayers?.fajr || (raw?.fajr === true ? "on_time" : "none"),
+        dhuhr: raw?.prayers?.dhuhr || (raw?.dhuhr === true ? "on_time" : "none"),
+        asr: raw?.prayers?.asr || (raw?.asr === true ? "on_time" : "none"),
+        maghrib: raw?.prayers?.maghrib || (raw?.maghrib === true ? "on_time" : "none"),
+        isha: raw?.prayers?.isha || (raw?.isha === true ? "on_time" : "none"),
+      },
+      sunnah: {
+        fajrSunnah: Boolean(raw?.sunnah?.fajrSunnah),
+        dhuhrSunnahBefore: Boolean(raw?.sunnah?.dhuhrSunnahBefore),
+        dhuhrSunnahAfter: Boolean(raw?.sunnah?.dhuhrSunnahAfter),
+        maghribSunnah: Boolean(raw?.sunnah?.maghribSunnah),
+        ishaSunnah: Boolean(raw?.sunnah?.ishaSunnah),
+        duha: Boolean(raw?.sunnah?.duha),
+        qiyamWitr: Boolean(raw?.sunnah?.qiyamWitr),
+      },
+    };
+  };
+
   // Logs Map stored in LocalStorage: { [YYYY-MM-DD]: DailyPrayerLog }
   const [allLogs, setAllLogs] = useState<Record<string, DailyPrayerLog>>(() => {
     try {
       const saved = localStorage.getItem("prayer_tracker_logs");
-      return saved ? JSON.parse(saved) : {};
+      if (!saved) return {};
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== "object") return {};
+      const cleaned: Record<string, DailyPrayerLog> = {};
+      Object.keys(parsed).forEach((k) => {
+        if (parsed[k]) {
+          cleaned[k] = normalizeDayLog(parsed[k], k);
+        }
+      });
+      return cleaned;
     } catch {
       return {};
     }
@@ -94,9 +126,15 @@ export const PrayerTrackerModal: React.FC<PrayerTrackerModalProps> = ({
   const [qadaaLog, setQadaaLog] = useState<QadaaLog>(() => {
     try {
       const saved = localStorage.getItem("prayer_qadaa_logs");
-      return saved
-        ? JSON.parse(saved)
-        : { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 };
+      if (!saved) return { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 };
+      const parsed = JSON.parse(saved);
+      return {
+        fajr: Number(parsed?.fajr) || 0,
+        dhuhr: Number(parsed?.dhuhr) || 0,
+        asr: Number(parsed?.asr) || 0,
+        maghrib: Number(parsed?.maghrib) || 0,
+        isha: Number(parsed?.isha) || 0,
+      };
     } catch {
       return { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 };
     }
@@ -110,7 +148,18 @@ export const PrayerTrackerModal: React.FC<PrayerTrackerModalProps> = ({
     const handleSync = () => {
       try {
         const saved = localStorage.getItem("prayer_tracker_logs");
-        if (saved) setAllLogs(JSON.parse(saved));
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === "object") {
+            const cleaned: Record<string, DailyPrayerLog> = {};
+            Object.keys(parsed).forEach((k) => {
+              if (parsed[k]) {
+                cleaned[k] = normalizeDayLog(parsed[k], k);
+              }
+            });
+            setAllLogs(cleaned);
+          }
+        }
       } catch {}
     };
     window.addEventListener("prayer_status_updated", handleSync);
@@ -130,27 +179,7 @@ export const PrayerTrackerModal: React.FC<PrayerTrackerModalProps> = ({
 
   // Get current day's log or default
   const currentDayLog: DailyPrayerLog = useMemo(() => {
-    return (
-      allLogs[selectedDate] || {
-        date: selectedDate,
-        prayers: {
-          fajr: "none",
-          dhuhr: "none",
-          asr: "none",
-          maghrib: "none",
-          isha: "none",
-        },
-        sunnah: {
-          fajrSunnah: false,
-          dhuhrSunnahBefore: false,
-          dhuhrSunnahAfter: false,
-          maghribSunnah: false,
-          ishaSunnah: false,
-          duha: false,
-          qiyamWitr: false,
-        },
-      }
-    );
+    return normalizeDayLog(allLogs ? allLogs[selectedDate] : null, selectedDate);
   }, [allLogs, selectedDate]);
 
   // Update Prayer Status
@@ -224,32 +253,41 @@ export const PrayerTrackerModal: React.FC<PrayerTrackerModalProps> = ({
 
   // Calculate Streak & Stats
   const stats = useMemo(() => {
-    const dates = Object.keys(allLogs).sort();
+    const dates = allLogs ? Object.keys(allLogs).sort() : [];
     let totalFardhPrayed = 0;
     let totalMosquePrayed = 0;
     let totalSunnahPrayed = 0;
 
     dates.forEach((d) => {
       const log = allLogs[d];
-      Object.values(log.prayers).forEach((st) => {
-        if (st === "mosque" || st === "on_time" || st === "late") {
-          totalFardhPrayed++;
-        }
-        if (st === "mosque") {
-          totalMosquePrayed++;
-        }
-      });
-      Object.values(log.sunnah).forEach((sn) => {
-        if (sn) totalSunnahPrayed++;
-      });
+      if (!log) return;
+      if (log.prayers && typeof log.prayers === "object") {
+        Object.values(log.prayers).forEach((st) => {
+          if (st === "mosque" || st === "on_time" || st === "late") {
+            totalFardhPrayed++;
+          }
+          if (st === "mosque") {
+            totalMosquePrayed++;
+          }
+        });
+      }
+      if (log.sunnah && typeof log.sunnah === "object") {
+        Object.values(log.sunnah).forEach((sn) => {
+          if (sn) totalSunnahPrayed++;
+        });
+      }
     });
 
     // Current day stats
-    const todayFardhCount = Object.values(currentDayLog.prayers).filter(
-      (st) => st === "mosque" || st === "on_time" || st === "late"
-    ).length;
+    const todayFardhCount = currentDayLog?.prayers
+      ? Object.values(currentDayLog.prayers).filter(
+          (st) => st === "mosque" || st === "on_time" || st === "late"
+        ).length
+      : 0;
 
-    const todaySunnahCount = Object.values(currentDayLog.sunnah).filter(Boolean).length;
+    const todaySunnahCount = currentDayLog?.sunnah
+      ? Object.values(currentDayLog.sunnah).filter(Boolean).length
+      : 0;
 
     return {
       totalFardhPrayed,

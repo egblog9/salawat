@@ -174,7 +174,7 @@ export const QuranMemorizeModal: React.FC<QuranMemorizeModalProps> = ({
 
       const currentSpoken = spokenTokens[spokenIdx];
 
-      // Exact or very close match
+      // Exact match or clean Arabic match
       if (currentSpoken === target.cleanWord) {
         result.push({
           target,
@@ -183,32 +183,24 @@ export const QuranMemorizeModal: React.FC<QuranMemorizeModalProps> = ({
         });
         spokenIdx++;
       } else {
-        // Look ahead 1-2 words in target to see if user skipped a word
+        // Check if next target word matches instead (single word skipped)
         const nextTarget1 = allTargetWords[targetIdx + 1]?.cleanWord;
-        const nextTarget2 = allTargetWords[targetIdx + 2]?.cleanWord;
 
-        if (nextTarget1 === currentSpoken) {
+        if (nextTarget1 && nextTarget1 === currentSpoken) {
           // Current target was skipped/forgotten
           result.push({
             target,
             status: "skipped",
-            feedback: `نسيان: الكلمة الصحيحة هي «${target.originalWord}»`,
+            feedback: `نسيان: الكلمة هي «${target.originalWord}»`,
           });
           // Do not increment spokenIdx so next iteration matches nextTarget1
-        } else if (nextTarget2 === currentSpoken) {
-          // 2 words were skipped
-          result.push({
-            target,
-            status: "skipped",
-            feedback: `نسيان: الكلمة الصحيحة هي «${target.originalWord}»`,
-          });
         } else {
-          // Mismatch / Wrong word
+          // User pronounced a different word or misspelled word
           result.push({
             target,
             status: "incorrect",
             userSpokenWord: currentSpoken,
-            feedback: `خطأ: قيل «${currentSpoken}» والصواب «${target.originalWord}»`,
+            feedback: `نُطق: «${currentSpoken}» | الأصل: «${target.originalWord}»`,
           });
           spokenIdx++;
         }
@@ -633,7 +625,28 @@ export const QuranMemorizeModal: React.FC<QuranMemorizeModalProps> = ({
         </div>
       </main>
 
-      {/* 5. Speech / Manual Input Notification Banner */}
+      {/* 5. Live Speech Transcript Display (يكتب اللي بيتقال بالضبط) */}
+      {(spokenTranscript || isListening) && (
+        <div className="bg-emerald-950/90 text-white px-4 py-2 text-xs flex items-center justify-between gap-2 border-t border-emerald-800/40 animate-in fade-in">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+            <span className="text-emerald-300 font-bold whitespace-nowrap">ما التقطه المايك:</span>
+            <p className="font-amiri text-sm text-stone-100 truncate">
+              {spokenTranscript || "بانتظار نطق الآيات..."}
+            </p>
+          </div>
+          {spokenTranscript && (
+            <button
+              onClick={() => setSpokenTranscript("")}
+              className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 hover:text-white px-2 py-0.5 rounded-md transition-colors cursor-pointer flex-shrink-0"
+            >
+              مسح الصوت
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 6. Speech / Manual Input Notification Banner */}
       {speechError && (
         <div className="bg-red-50 border-t border-red-200 px-4 py-2 text-xs text-red-700 flex items-center justify-between">
           <span>{speechError}</span>

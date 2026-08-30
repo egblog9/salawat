@@ -81,10 +81,27 @@ export function confirmPrayerToday(
     // Update prayer_tracker_logs
     const savedLogs = localStorage.getItem("prayer_tracker_logs");
     const logs = savedLogs ? JSON.parse(savedLogs) : {};
-    const currentDay = logs[today] || {
-      date: today,
-      prayers: { fajr: "none", dhuhr: "none", asr: "none", maghrib: "none", isha: "none" },
-      sunnah: {
+    const currentDay = logs && logs[today] && typeof logs[today] === "object"
+      ? logs[today]
+      : {
+          date: today,
+          prayers: { fajr: "none", dhuhr: "none", asr: "none", maghrib: "none", isha: "none" },
+          sunnah: {
+            fajrSunnah: false,
+            dhuhrSunnahBefore: false,
+            dhuhrSunnahAfter: false,
+            maghribSunnah: false,
+            ishaSunnah: false,
+            duha: false,
+            qiyamWitr: false,
+          },
+        };
+
+    if (!currentDay.prayers || typeof currentDay.prayers !== "object") {
+      currentDay.prayers = { fajr: "none", dhuhr: "none", asr: "none", maghrib: "none", isha: "none" };
+    }
+    if (!currentDay.sunnah || typeof currentDay.sunnah !== "object") {
+      currentDay.sunnah = {
         fajrSunnah: false,
         dhuhrSunnahBefore: false,
         dhuhrSunnahAfter: false,
@@ -92,8 +109,8 @@ export function confirmPrayerToday(
         ishaSunnah: false,
         duha: false,
         qiyamWitr: false,
-      },
-    };
+      };
+    }
 
     currentDay.prayers[prayerId] = status;
     logs[today] = currentDay;

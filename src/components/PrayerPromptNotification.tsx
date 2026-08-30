@@ -46,30 +46,55 @@ export const PrayerPromptNotification: React.FC<PrayerPromptNotificationProps> =
       // Prayers to check (exclude Sunrise/الشروق as it's not a fard prayer)
       const fardPrayers = prayerList.filter((p) => p.id !== "sunrise");
 
-      // Find prayers that have already entered today
-      // Check from latest to earliest (e.g. Isha, Maghrib, Asr, Dhuhr, Fajr)
+      // Find the current active prayer window (e.g. from current prayer time until next prayer time)
+      // Prayers in chronological order: Fajr -> Dhuhr -> Asr -> Maghrib -> Isha
+      let activePrayerForNow: typeof fardPrayers[0] | null = null;
+
       for (let i = fardPrayers.length - 1; i >= 0; i--) {
         const prayer = fardPrayers[i];
         const prayerMinutes = prayer.hours24 * 60 + prayer.minutes;
 
-        // Has prayer time arrived?
         if (nowMinutes >= prayerMinutes) {
-          const prayerLogKey = `prayer_prompt_completed_${todayStr}_${prayer.id}`;
-          const isCompleted = localStorage.getItem(prayerLogKey) === "true";
-
-          // If not confirmed completed yet
-          if (!isCompleted) {
-            setActivePromptPrayer({
-              key: prayer.id,
-              name: prayer.name,
-              displayTime: prayer.displayTime,
-            });
-            return;
-          }
+          activePrayerForNow = prayer;
+          break;
         }
       }
 
-      setActivePromptPrayer(null);
+      // If before Fajr today, the current window is Isha from previous night or none yet
+      if (!activePrayerForNow) {
+        setActivePromptPrayer(null);
+        return;
+      }
+
+      const prayer = activePrayerForNow;
+      const prayerPromptKey = `prayer_prompt_completed_${todayStr}_${prayer.id}`;
+      const prayerConfirmedKey = `prayer_confirmed_${prayer.id}_${todayStr}`;
+      
+      // Also check standard prayer_tracker_logs
+      let trackerLogged = false;
+      try {
+        const logs = JSON.parse(localStorage.getItem("prayer_tracker_logs") || "{}");
+        const todayLogs = logs[todayStr]?.prayers;
+        if (todayLogs && (todayLogs[prayer.id] === "mosque" || todayLogs[prayer.id] === "on_time" || todayLogs[prayer.id] === "late")) {
+          trackerLogged = true;
+        }
+      } catch {}
+
+      const isCompleted =
+        localStorage.getItem(prayerPromptKey) === "true" ||
+        localStorage.getItem(prayerConfirmedKey) === "true" ||
+        trackerLogged;
+
+      // If not confirmed completed yet, show the prompt for this specific prayer
+      if (!isCompleted) {
+        setActivePromptPrayer({
+          key: prayer.id,
+          name: prayer.name,
+          displayTime: prayer.displayTime,
+        });
+      } else {
+        setActivePromptPrayer(null);
+      }
     };
 
     checkPrayerStatus();
@@ -82,16 +107,56 @@ export const PrayerPromptNotification: React.FC<PrayerPromptNotificationProps> =
   const handlePrayedYes = () => {
     const todayStr = new Date().toISOString().split("T")[0];
     const prayerLogKey = `prayer_prompt_completed_${todayStr}_${activePromptPrayer.key}`;
+    const confirmedKey = `prayer_confirmed_${activePromptPrayer.key}_${todayStr}`;
     localStorage.setItem(prayerLogKey, "true");
+    localStorage.setItem(confirmedKey, "true");
 
     // Also update prayer tracker logs if available
     try {
       const logsKey = "prayer_tracker_logs";
-      const existing = JSON.parse(localStorage.getItem(logsKey) || "{}");
-      const currentDayLogs = existing[todayStr] || {};
-      currentDayLogs[activePromptPrayer.key] = true;
-      existing[todayStr] = currentDayLogs;
+      const rawSaved = localStorage.getItem(logsKey);
+      const existing = rawSaved ? JSON.parse(rawSaved) : {};
+      const currentDayLog = existing && existing[todayStr] && typeof existing[todayStr] === "object"
+        ? existing[todayStr]
+        : {
+            date: todayStr,
+            prayers: { fajr: "none", dhuhr: "none", asr: "none", maghrib: "none", isha: "none" },
+            sunnah: {
+              fajrSunnah: false,
+              dhuhrSunnahBefore: false,
+              dhuhrSunnahAfter: false,
+              maghribSunnah: false,
+              ishaSunnah: false,
+              duha: false,
+              qiyamWitr: false,
+            },
+          };
+
+      if (!currentDayLog.prayers || typeof currentDayLog.prayers !== "object") {
+        currentDayLog.prayers = { fajr: "none", dhuhr: "none", asr: "none", maghrib: "none", isha: "none" };
+      }
+      if (!currentDayLog.sunnah || typeof currentDayLog.sunnah !== "object") {
+        currentDayLog.sunnah = {
+          fajrSunnah: false,
+          dhuhrSunnahBefore: false,
+          dhuhrSunnahAfter: false,
+          maghribSunnah: false,
+          ishaSunnah: false,
+          duha: false,
+          qiyamWitr: false,
+        };
+      }
+
+      currentDayLog.prayers[activePromptPrayer.key] = "on_time";
+      existing[todayStr] = currentDayLog;
       localStorage.setItem(logsKey, JSON.stringify(existing));
+    } catch {}
+
+    // Dispatch global sync event for PrayerTrackerModal
+    try {
+      window.dispatchEvent(new CustomEvent("prayer_status_updated", {
+        detail: { prayerKey: activePromptPrayer.key, date: todayStr, status: "on_time" }
+      }));
     } catch {}
 
     try {
