@@ -23,6 +23,15 @@ import { QuranModal } from "./components/QuranModal";
 import { HijriCalendarModal } from "./components/HijriCalendarModal";
 import { PrayerTrackerModal } from "./components/PrayerTrackerModal";
 import { ZakatCalculatorModal } from "./components/ZakatCalculatorModal";
+import { HadithModal } from "./components/HadithModal";
+import { QuranMemorizeModal } from "./components/QuranMemorizeModal";
+import { PrayerPromptNotification } from "./components/PrayerPromptNotification";
+import {
+  FloatingGlassDhikr,
+  FloatingDhikrConfig,
+  DEFAULT_FLOATING_DHIKR_CONFIG,
+} from "./components/FloatingGlassDhikr";
+import { FloatingDhikrSettingsModal } from "./components/FloatingDhikrSettingsModal";
 import { SALAWAT_COLLECTION, SHEIKH_AUDIO_TRACKS, REMINDER_VOICE_FORMULAS } from "./data/salawatData";
 import { SalawatItem, SheikhAudioTrack, SiteStats, ReminderVoiceFormula } from "./types";
 import { sheikhAudioManager, reminderAudioManager, SEQUENTIAL_AZKAR_LIST, stopAllAppAudio } from "./utils/audio";
@@ -45,6 +54,23 @@ export default function App() {
   const [isTasbeehModalOpen, setIsTasbeehModalOpen] = useState<boolean>(false);
   const [isOverlayModalOpen, setIsOverlayModalOpen] = useState<boolean>(false);
   const [isQuranModalOpen, setIsQuranModalOpen] = useState<boolean>(false);
+  const [isHijriModalOpen, setIsHijriModalOpen] = useState<boolean>(false);
+  const [isPrayerTrackerModalOpen, setIsPrayerTrackerModalOpen] = useState<boolean>(false);
+  const [isZakatModalOpen, setIsZakatModalOpen] = useState<boolean>(false);
+  const [isHadithModalOpen, setIsHadithModalOpen] = useState<boolean>(false);
+  const [isMemorizeModalOpen, setIsMemorizeModalOpen] = useState<boolean>(false);
+  const [isFloatingDhikrSettingsOpen, setIsFloatingDhikrSettingsOpen] = useState<boolean>(false);
+
+  // Floating Glass Dhikr Config & Manual Trigger State
+  const [floatingDhikrConfig, setFloatingDhikrConfig] = useState<FloatingDhikrConfig>(() => {
+    try {
+      const saved = localStorage.getItem("floating_dhikr_config");
+      return saved ? JSON.parse(saved) : DEFAULT_FLOATING_DHIKR_CONFIG;
+    } catch (e) {
+      return DEFAULT_FLOATING_DHIKR_CONFIG;
+    }
+  });
+  const [forceDhikrTrigger, setForceDhikrTrigger] = useState<number>(0);
 
   // Quran Audio Recitation Global State
   const [quranPlayingInfo, setQuranPlayingInfo] = useState<{
@@ -559,6 +585,24 @@ export default function App() {
       case "quran":
         setIsQuranModalOpen(true);
         break;
+      case "memorize":
+        setIsMemorizeModalOpen(true);
+        break;
+      case "hadith":
+        setIsHadithModalOpen(true);
+        break;
+      case "floating_dhikr":
+        setIsFloatingDhikrSettingsOpen(true);
+        break;
+      case "hijri":
+        setIsHijriModalOpen(true);
+        break;
+      case "prayer_tracker":
+        setIsPrayerTrackerModalOpen(true);
+        break;
+      case "zakat":
+        setIsZakatModalOpen(true);
+        break;
       case "azkar":
         setIsAzkarModalOpen(true);
         break;
@@ -596,6 +640,46 @@ export default function App() {
       
       {/* PWA Mobile Install Floating Prompt */}
       <InstallPwaPrompt />
+
+      {/* Floating Glass Dhikr Notification & Tap-to-Count System */}
+      <FloatingGlassDhikr
+        config={floatingDhikrConfig}
+        onIncrementTasbeeh={handleIncrementTasbeeh}
+        onOpenSettings={() => setIsFloatingDhikrSettingsOpen(true)}
+        forceTrigger={forceDhikrTrigger}
+      />
+
+      {/* Floating Dhikr Customization & Timing Settings Modal */}
+      <FloatingDhikrSettingsModal
+        isOpen={isFloatingDhikrSettingsOpen}
+        onClose={() => setIsFloatingDhikrSettingsOpen(false)}
+        config={floatingDhikrConfig}
+        onChangeConfig={(cfg) => {
+          setFloatingDhikrConfig(cfg);
+          try {
+            localStorage.setItem("floating_dhikr_config", JSON.stringify(cfg));
+          } catch (e) {}
+        }}
+        onTestTrigger={() => setForceDhikrTrigger(Date.now())}
+      />
+
+      {/* Hijri Calendar & Converter Modal */}
+      <HijriCalendarModal
+        isOpen={isHijriModalOpen}
+        onClose={() => setIsHijriModalOpen(false)}
+      />
+
+      {/* Prayer & Sunnah & Qada Tracker Modal */}
+      <PrayerTrackerModal
+        isOpen={isPrayerTrackerModalOpen}
+        onClose={() => setIsPrayerTrackerModalOpen(false)}
+      />
+
+      {/* Comprehensive Sharia Zakat Calculator Modal */}
+      <ZakatCalculatorModal
+        isOpen={isZakatModalOpen}
+        onClose={() => setIsZakatModalOpen(false)}
+      />
 
       {/* Voice Reminder Global Floating Toast Notification */}
       <ReminderToast
@@ -713,6 +797,18 @@ export default function App() {
         }}
       />
 
+      {/* Hadith Sharif Modal (Authentic collection with search, audio, categories) */}
+      <HadithModal
+        isOpen={isHadithModalOpen}
+        onClose={() => setIsHadithModalOpen(false)}
+      />
+
+      {/* Quran Memorization & Voice Verification (Tahfeez) Modal */}
+      <QuranMemorizeModal
+        isOpen={isMemorizeModalOpen}
+        onClose={() => setIsMemorizeModalOpen(false)}
+      />
+
       {/* Profile & Voice Settings Modal */}
       <ProfileSettingsModal
         isOpen={isProfileModalOpen}
@@ -756,6 +852,11 @@ export default function App() {
       {/* Main Single-Screen Streamlined Container strictly matching mockup */}
       <main className="flex-1 max-w-md w-full mx-auto px-4 pt-3 pb-8 space-y-4">
         
+        {/* 0. Prayer Completion Live Prompt (Did you pray Dhuhr/Asr?) */}
+        <PrayerPromptNotification
+          selectedCity={selectedCity}
+        />
+
         {/* 1. Green Dome Hero Card with Interactive Salawat Counter */}
         <SalawatHeroCard
           count={personalSalawat}
@@ -788,7 +889,7 @@ export default function App() {
 
         {/* 5. Prophet Hadith Banner (Calligraphy Emblem, quotation, narrator) */}
         <ProphetHadithBanner
-          onOpenAllHadiths={() => setIsLibraryModalOpen(true)}
+          onOpenAllHadiths={() => setIsHadithModalOpen(true)}
         />
 
       </main>

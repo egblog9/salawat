@@ -23,7 +23,7 @@ export const APP_SECTIONS: AppSection[] = [
     label: "المسبحة والصيغ النبوية",
     shortLabel: "المسبحة",
     description: "السبحة الإلكترونية التفاعلية، عداد الأوراد، وصيغ الصلاة على النبي المأثورة",
-    icon: "📿",
+    icon: "CircleDot",
     category: "worship",
   },
   {
@@ -31,7 +31,7 @@ export const APP_SECTIONS: AppSection[] = [
     label: "التذكير الصوتي والإشعارات",
     shortLabel: "التذكير",
     description: "تذكير صوتي دوري بصوت الشيوخ وإشعارات النظام في الخلفية",
-    icon: "🔊",
+    icon: "Volume2",
     badge: "صوت الشيوخ",
     category: "audio",
   },
@@ -40,7 +40,7 @@ export const APP_SECTIONS: AppSection[] = [
     label: "تلاوات الشيوخ والقراء",
     shortLabel: "التلاوات",
     description: "استوديو الاستماع إلى تسجيلات كبار القراء وأئمة الحرم المكي الشريف",
-    icon: "🎙️",
+    icon: "Radio",
     category: "audio",
   },
   {
@@ -48,7 +48,7 @@ export const APP_SECTIONS: AppSection[] = [
     label: "فضائل وأحاديث صحيحة",
     shortLabel: "الفضائل",
     description: "أحاديث نبوية شريفة مسندة في فضل الصلاة على الحبيب ﷺ مع الفوائد",
-    icon: "📜",
+    icon: "BookOpen",
     category: "knowledge",
   },
   {
@@ -56,7 +56,7 @@ export const APP_SECTIONS: AppSection[] = [
     label: "المزيد",
     shortLabel: "المزيد",
     description: "المشاركة كصدقة جارية، بطاقات التذكير، وتثبيت التطبيق والمميزات القادمة",
-    icon: "menu",
+    icon: "Menu",
     category: "propagation",
   },
 ];

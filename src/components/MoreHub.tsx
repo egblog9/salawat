@@ -72,25 +72,25 @@ export const MoreHub: React.FC<MoreHubProps> = ({
     {
       title: "ختمات الصلاة على النبي التشاركية",
       desc: "عداد جماعي إسلامي يجمع المسلمين من كل مكان لتحقيق ختمة مليون صلاة على الحبيب ﷺ معاً.",
-      icon: "📿",
+      icon: "ختمة",
       status: "قيد التطوير",
     },
     {
       title: "أذكار الصباح والمساء المسموعة",
       desc: "باقة صوتية مسندة لأذكار اليوم والليلة بأصوات ندية وهادئة لتشغيلها تلقائياً.",
-      icon: "🌅",
+      icon: "أذكار",
       status: "مخطط لها",
     },
     {
       title: "منبه قيام الليل والثلث الأخير",
       desc: "تنبيه لطيف قبل الفجر بالصلاة على النبي والاستغفار في وقت النزول الإلهي المبارك.",
-      icon: "🌙",
+      icon: "قيام",
       status: "مخطط لها",
     },
     {
       title: "سجل الأوراد والإحصائيات المتقدمة",
       desc: "متابعة أسبوعية وشهرية لعدد الصلوات على النبي ﷺ مع إحصائيات تحفيزية للاستمرار.",
-      icon: "📊",
+      icon: "إحصائيات",
       status: "مخطط لها",
     },
   ];
@@ -103,7 +103,6 @@ export const MoreHub: React.FC<MoreHubProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-2xl">📋</span>
               <h2 className="text-xl sm:text-2xl font-bold font-amiri text-amber-200">
                 قائمة مميزات وأدوات التطبيق (المزيد)
               </h2>
@@ -211,7 +210,7 @@ export const MoreHub: React.FC<MoreHubProps> = ({
                   {isBackgroundEnabled ? (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      <span>نشط الآن ✓</span>
+                      <span>نشط الآن</span>
                     </span>
                   ) : (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-800 text-stone-400">
@@ -262,7 +261,7 @@ export const MoreHub: React.FC<MoreHubProps> = ({
                     انشر تؤجر (بطاقات ومشاركة الصدقة الجارية)
                   </h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
-                    صدقة جارية 🌿
+                    صدقة جارية
                   </span>
                 </div>
                 <p className="text-xs text-stone-400 mt-0.5">
@@ -305,7 +304,7 @@ export const MoreHub: React.FC<MoreHubProps> = ({
                     المميزات القادمة والمقترحات
                   </h3>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40">
-                    قيد التطوير 💡
+                    قيد التطوير
                   </span>
                 </div>
                 <p className="text-xs text-stone-400 mt-0.5">

@@ -15,7 +15,7 @@ export interface SheikhAudioTrack {
   arabicText: string;
   audioUrl: string;
   duration: string;
-  category: "ibrahimiyyah" | "prophetic" | "friday" | "dua" | "healing";
+  category: "ibrahimiyyah" | "prophetic" | "friday" | "dua" | "healing" | "salawat" | "adhan" | "nawawi" | "quran" | "ruqyah" | string;
   categoryLabel: string;
   isFeatured?: boolean;
 }

@@ -138,7 +138,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-2xl font-bold font-tajawal text-stone-100 flex items-center gap-2">
-                  <span>🔊 التذكير الصوتي الفوري</span>
+                  <span>التذكير الصوتي الفوري</span>
                 </h2>
                 {enabled && (
                   <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
@@ -393,12 +393,12 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                     {!isMuted ? (
                       <>
                         <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>🔊 تشغيل الصوت</span>
+                        <span>تشغيل الصوت</span>
                       </>
                     ) : (
                       <>
                         <VolumeX className="w-3.5 h-3.5 text-rose-400" />
-                        <span>🔇 كتم الصوت (إشعار مرئي فقط)</span>
+                        <span>كتم الصوت (إشعار مرئي فقط)</span>
                       </>
                     )}
                   </button>
@@ -419,7 +419,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                     }`}
                   >
                     <Play className={`w-3.5 h-3.5 ${isTestingSound ? "animate-spin" : ""}`} />
-                    <span>{isTestingSound ? "جاري الاستماع..." : "اختبار الصوت المختار 🎧"}</span>
+                    <span>{isTestingSound ? "جاري الاستماع..." : "اختبار الصوت المختار"}</span>
                   </button>
                 </div>
               </div>
@@ -432,7 +432,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                     <span>
                       إذن الظهور فوق التطبيقات ومضخم الصوت:{" "}
                       <strong className="text-amber-300">
-                        {volumeBoostEnabled ? "صوت مضاعف 200% ✓" : "عادي"}
+                        {volumeBoostEnabled ? "صوت مضاعف 200%" : "عادي"}
                       </strong>
                     </span>
                   </div>
@@ -442,7 +442,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                     className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow active:scale-95 cursor-pointer transition-all"
                   >
                     <Sliders className="w-3.5 h-3.5 text-amber-300" />
-                    <span>ضبط إذن الظهور ورفع الصوت ⚡</span>
+                    <span>ضبط إذن الظهور ورفع الصوت</span>
                   </button>
                 </div>
               )}
@@ -506,7 +506,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg sm:text-2xl font-bold font-tajawal text-stone-100 flex items-center gap-2">
-                  <span>🔔 إشعارات شريط الهاتف والنظام (في الخلفية)</span>
+                  <span>إشعارات شريط الهاتف والنظام (في الخلفية)</span>
                 </h2>
                 {systemNotificationsEnabled && (
                   <span className="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-900/90 text-amber-300 border border-amber-500/40 flex items-center gap-1">
@@ -602,7 +602,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
                 className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer flex-shrink-0"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>{isTestingNotification ? "جاري الإرسال..." : "إرسال إشعار تجريبي لشريط الهاتف 📲"}</span>
+                <span>{isTestingNotification ? "جاري الإرسال..." : "إرسال إشعار تجريبي لشريط الهاتف"}</span>
               </button>
             </div>
 
@@ -613,15 +613,15 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
               </span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
                 <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800 text-stone-300">
-                  <div className="font-bold text-amber-300 mb-0.5">🌿 لا تنسَ الصلاة على النبي ﷺ</div>
+                  <div className="font-bold text-amber-300 mb-0.5">لا تنسَ الصلاة على النبي ﷺ</div>
                   <div className="text-[11px] text-stone-400">{currentFormula.arabicText}</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800 text-stone-300">
-                  <div className="font-bold text-emerald-400 mb-0.5">🤍 شارك التطبيق صدقة جارية</div>
+                  <div className="font-bold text-emerald-400 mb-0.5">شارك التطبيق صدقة جارية</div>
                   <div className="text-[11px] text-stone-400">الدال على الخير كفاعله، انشر التطبيق واكسب الأجر</div>
                 </div>
                 <div className="p-2.5 rounded-xl bg-stone-900/90 border border-stone-800 text-stone-300">
-                  <div className="font-bold text-amber-200 mb-0.5">🤲 عطر لسانك بالصلاة على الحبيب</div>
+                  <div className="font-bold text-amber-200 mb-0.5">عطر لسانك بالصلاة على الحبيب</div>
                   <div className="text-[11px] text-stone-400">من صلى عليّ صلاة صلى الله عليه بها عشراً</div>
                 </div>
               </div>
@@ -651,7 +651,7 @@ export const AudioReminderCard: React.FC<AudioReminderCardProps> = ({
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-bold text-stone-100 font-tajawal flex items-center gap-1.5">
-              <span>انشر التطبيق ليكون صدقة جارية لك 📲</span>
+              <span>انشر التطبيق ليكون صدقة جارية لك</span>
             </h3>
             <p className="text-xs text-stone-300 mt-0.5">
               عند مشاركة التطبيق، يتثبت كبرنامج مستقل على هاتف أي شخص مجاناً وبدون إعلانات.

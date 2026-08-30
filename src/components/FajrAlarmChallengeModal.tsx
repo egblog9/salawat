@@ -243,7 +243,7 @@ export const FajrAlarmChallengeModal: React.FC<FajrAlarmChallengeModalProps> = (
 
         {/* Main Title */}
         <h2 className="text-2xl sm:text-3xl font-bold font-amiri text-stone-100 mb-1">
-          🌅 الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ
+          الصَّلَاةُ خَيْرٌ مِنَ النَّوْمِ
         </h2>
         <p className="text-xs sm:text-sm text-stone-300 font-tajawal mb-6">
           أجب عن التحدي لإثبات استيقاظك وإيقاف المنبه:
@@ -315,7 +315,7 @@ export const FajrAlarmChallengeModal: React.FC<FajrAlarmChallengeModalProps> = (
                   type="submit"
                   className="py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-amber-600 text-stone-950 font-bold text-base cursor-pointer shadow-lg active:scale-95 transition-all"
                 >
-                  تأكيد ✓
+                  تأكيد الحل
                 </button>
               </div>
             </form>

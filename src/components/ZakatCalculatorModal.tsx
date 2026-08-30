@@ -1,19 +1,17 @@
 import React, { useState, useMemo } from "react";
 import {
+  ArrowRight,
   X,
   Coins,
-  Calculator,
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
   HelpCircle,
-  Sparkles,
   Layers,
   ShoppingBag,
   DollarSign,
   Copy,
   Check,
-  Share2,
   Users,
 } from "lucide-react";
 
@@ -27,7 +25,7 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState<"wealth" | "gold_silver" | "fitr" | "recipients">("wealth");
-  const [currency, setCurrency] = useState<string>("EGP"); // EGP, SAR, AED, KWD, USD, JOD
+  const [currency, setCurrency] = useState<string>("EGP");
 
   // Currency list
   const currencies = [
@@ -37,19 +35,20 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
     { code: "KWD", name: "دينار كويتي (د.ك)", symbol: "د.ك" },
     { code: "USD", name: "دولار أمريكي ($)", symbol: "$" },
     { code: "JOD", name: "دينار أردني (د.أ)", symbol: "د.أ" },
+    { code: "QAR", name: "ريال قطري (ر.ق)", symbol: "ر.ق" },
   ];
 
   // Gold & Silver Prices per Gram (Editable defaults)
-  const [gold24Price, setGold24Price] = useState<number>(3600); // in selected currency
+  const [gold24Price, setGold24Price] = useState<number>(3600);
   const [silverPrice, setSilverPrice] = useState<number>(45);
 
   // 1. Cash & Wealth State
   const [cashInHand, setCashInHand] = useState<number>(0);
   const [cashInBank, setCashInBank] = useState<number>(0);
-  const [receivables, setReceivables] = useState<number>(0); // Good debts to be collected
-  const [tradeGoods, setTradeGoods] = useState<number>(0); // Business inventory
-  const [stocksTrading, setStocksTrading] = useState<number>(0); // Speculation stocks
-  const [debtsOwed, setDebtsOwed] = useState<number>(0); // Deductible immediate debts
+  const [receivables, setReceivables] = useState<number>(0);
+  const [tradeGoods, setTradeGoods] = useState<number>(0);
+  const [stocksTrading, setStocksTrading] = useState<number>(0);
+  const [debtsOwed, setDebtsOwed] = useState<number>(0);
 
   // 2. Gold & Silver State
   const [gold24Grams, setGold24Grams] = useState<number>(0);
@@ -65,16 +64,10 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
   // Copy Feedback
   const [copied, setCopied] = useState<boolean>(false);
 
-  // Calculations
   // Gold Nisab: 85g 24k Gold
   const goldNisabValue = useMemo(() => {
     return 85 * gold24Price;
   }, [gold24Price]);
-
-  // Silver Nisab: 595g Silver
-  const silverNisabValue = useMemo(() => {
-    return 595 * silverPrice;
-  }, [silverPrice]);
 
   // Total Gold converted to 24k equivalent
   const equivalentGold24Grams = useMemo(() => {
@@ -94,11 +87,11 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
 
   // Total Liquid Wealth (Money, Business Goods, Receivables minus Debts)
   const totalGrossCashWealth = useMemo(() => {
-    return cashInHand + cashInBank + receivables + tradeGoods + stocksTrading;
+    return (cashInHand || 0) + (cashInBank || 0) + (receivables || 0) + (tradeGoods || 0) + (stocksTrading || 0);
   }, [cashInHand, cashInBank, receivables, tradeGoods, stocksTrading]);
 
   const netCashWealth = useMemo(() => {
-    const val = totalGrossCashWealth - debtsOwed;
+    const val = totalGrossCashWealth - (debtsOwed || 0);
     return val > 0 ? val : 0;
   }, [totalGrossCashWealth, debtsOwed]);
 
@@ -124,21 +117,20 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
 
   // Zakat al-Fitr Due
   const totalFitrDue = useMemo(() => {
-    return fitrFamilyMembers * fitrValuePerPerson;
+    return (fitrFamilyMembers || 0) * (fitrValuePerPerson || 0);
   }, [fitrFamilyMembers, fitrValuePerPerson]);
 
   const currSymbol = currencies.find((c) => c.code === currency)?.symbol || currency;
 
   const handleCopySummary = () => {
-    const text = `📊 *ملخص حساب الزكاة الشرعية*:
-• إجمالي الأموال والمدخرات: ${netCashWealth.toLocaleString("ar-EG")} ${currSymbol}
-• قيمة الذهب والفضة: ${(totalGoldValue + totalSilverValue).toLocaleString("ar-EG")} ${currSymbol}
-• النصاب الشرعي (85 جرام ذهب 24): ${goldNisabValue.toLocaleString("ar-EG")} ${currSymbol}
-• حالة النصاب: ${isNisabReached ? "بلغ النصاب الشرعي وجبت الزكاة (2.5%)" : "لم يبلغ النصاب"}
-• *مقدار الزكاة الواجب إخراجها*: ${totalZakatDue.toLocaleString("ar-EG")} ${currSymbol}
-
-• زكاة الفطر لعدد (${fitrFamilyMembers}) أفراد: ${totalFitrDue.toLocaleString("ar-EG")} ${currSymbol}
-— تم الحساب عبر تطبيق صلوات المبارك`;
+    const text = `ملخص حساب الزكاة الشرعية:
+- إجمالي وعاء الأموال والمدخرات: ${netCashWealth.toLocaleString("en-US")} ${currSymbol}
+- قيمة الذهب والفضة: ${(totalGoldValue + totalSilverValue).toLocaleString("en-US")} ${currSymbol}
+- قيمة النصاب الشرعي (85 جرام عيار 24): ${goldNisabValue.toLocaleString("en-US")} ${currSymbol}
+- حالة النصاب: ${isNisabReached ? "بلغ النصاب الشرعي وحالت عليه شروط الوجوب" : "لم يبلغ النصاب بعد"}
+- مقدار الزكاة الواجب إخراجها (2.5%): ${totalZakatDue.toLocaleString("en-US")} ${currSymbol}
+- زكاة الفطر لعدد (${fitrFamilyMembers}) أفراد: ${totalFitrDue.toLocaleString("en-US")} ${currSymbol}
+(تم الحساب عبر تطبيق صلوات المبارك)`;
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -150,390 +142,397 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
 
   return (
     <div
-      id="zakat-calculator-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn select-none"
+      id="zakat-calculator-page"
+      className="fixed inset-0 z-50 bg-[#FAF9F5] flex flex-col w-full h-full overflow-hidden animate-in fade-in duration-200 select-none"
     >
-      <div className="bg-[#FAF9F5] w-full max-w-lg rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[92vh]">
-        
-        {/* Modal Header */}
-        <div className="bg-gradient-to-r from-emerald-900 via-stone-900 to-emerald-950 text-white p-4 sm:p-5 flex items-center justify-between border-b border-emerald-800/40">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow">
-              <Coins className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-bold font-tajawal text-white flex items-center gap-2">
-                <span>حاسبة الزكاة الشرعية</span>
-                <span className="text-[10px] bg-emerald-700 px-2 py-0.5 rounded-full font-bold">
-                  2.5% ربع العشر
-                </span>
-              </h2>
-              <p className="text-xs text-emerald-200/90 font-amiri">
-                وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ
-              </p>
-            </div>
-          </div>
-
+      {/* Standard Full Page Header */}
+      <header className="bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-950 text-white px-3.5 py-3 sm:px-6 sticky top-0 z-30 shadow-md border-b border-emerald-800/40 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-            title="إغلاق"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer"
+            title="رجوع للصفحة الرئيسية"
           >
-            <X className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5" />
           </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm sm:text-base md:text-lg font-bold font-tajawal text-white truncate">
+                حاسبة الزكاة الشرعية
+              </h1>
+              <span className="hidden sm:inline-block text-[10px] bg-emerald-800/90 text-emerald-200 px-2 py-0.5 rounded-full font-bold font-tajawal border border-emerald-600/40 whitespace-nowrap flex-shrink-0">
+                2.5% ربع العشر
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-emerald-200/80 font-amiri truncate">
+              وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ وَارْكَعُوا مَعَ الرَّاكِعِينَ
+            </p>
+          </div>
         </div>
 
-        {/* Currency & Live Nisab Banner */}
-        <div className="bg-stone-900 text-stone-200 px-4 py-2.5 flex items-center justify-between gap-2 border-b border-stone-800 text-xs font-tajawal">
-          <div className="flex items-center gap-2">
-            <span className="text-amber-400 font-bold">نصاب الذهب (85g):</span>
-            <span className="font-mono font-bold text-white">
-              {goldNisabValue.toLocaleString("ar-EG")} {currSymbol}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span className="text-stone-400 text-[11px]">العملة:</span>
+        {/* Currency Picker and Done in Header */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 bg-white/10 px-2 sm:px-3 py-1.5 rounded-xl sm:rounded-2xl border border-white/10 text-xs font-tajawal">
+            <span className="text-stone-300 text-[10px] sm:text-[11px]">العملة:</span>
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="bg-stone-800 border border-stone-700 text-white text-xs rounded-lg px-2 py-1 focus:outline-none"
+              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
             >
               {currencies.map((c) => (
-                <option key={c.code} value={c.code}>
+                <option key={c.code} value={c.code} className="bg-stone-900 text-white">
                   {c.name}
                 </option>
               ))}
             </select>
           </div>
-        </div>
 
-        {/* Tab Switcher */}
-        <div className="flex border-b border-stone-200 bg-white px-3 pt-2 gap-1.5 overflow-x-auto">
+          <button
+            onClick={onClose}
+            className="px-3.5 py-1.5 rounded-xl sm:rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs font-tajawal transition-all cursor-pointer shadow-sm active:scale-95 whitespace-nowrap"
+          >
+            تم
+          </button>
+        </div>
+      </header>
+
+      {/* Live Nisab Banner */}
+      <div className="bg-stone-900 text-stone-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-stone-800 text-xs font-tajawal">
+        <div className="max-w-2xl mx-auto w-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-amber-400 font-bold">نصاب الذهب (85 جرام عيار 24):</span>
+            <span className="font-mono font-bold text-white tracking-wide">
+              {goldNisabValue.toLocaleString("en-US")} {currSymbol}
+            </span>
+          </div>
+          <span className="text-stone-400 text-[11px]">
+            {isNisabReached ? "✅ بلغ النصاب" : "⏳ دون النصاب"}
+          </span>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="bg-white p-2 sm:p-3 border-b border-stone-200 shadow-sm">
+        <div className="max-w-2xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-stone-100 p-1.5 rounded-2xl">
           <button
             onClick={() => setActiveTab("wealth")}
-            className={`py-2 px-3 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`py-2 px-2 text-xs font-bold font-tajawal rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "wealth"
-                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
-                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+                ? "bg-[#2F5241] text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
             }`}
           >
-            <DollarSign className="w-4 h-4" />
+            <DollarSign className="w-3.5 h-3.5" />
             <span>المال والمدخرات</span>
           </button>
 
           <button
             onClick={() => setActiveTab("gold_silver")}
-            className={`py-2 px-3 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`py-2 px-2 text-xs font-bold font-tajawal rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "gold_silver"
-                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
-                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+                ? "bg-[#2F5241] text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
             }`}
           >
-            <Coins className="w-4 h-4 text-amber-500" />
+            <Coins className="w-3.5 h-3.5" />
             <span>الذهب والفضة</span>
           </button>
 
           <button
             onClick={() => setActiveTab("fitr")}
-            className={`py-2 px-3 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`py-2 px-2 text-xs font-bold font-tajawal rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "fitr"
-                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
-                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+                ? "bg-[#2F5241] text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
             }`}
           >
-            <Users className="w-4 h-4 text-teal-600" />
+            <Users className="w-3.5 h-3.5" />
             <span>زكاة الفطر</span>
           </button>
 
           <button
             onClick={() => setActiveTab("recipients")}
-            className={`py-2 px-3 text-xs sm:text-sm font-bold font-tajawal rounded-t-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`py-2 px-2 text-xs font-bold font-tajawal rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === "recipients"
-                ? "bg-[#FAF9F5] text-emerald-900 border-t-2 border-emerald-700 shadow-sm"
-                : "text-stone-500 hover:text-stone-800 hover:bg-stone-50"
+                ? "bg-[#2F5241] text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900"
             }`}
           >
-            <ShieldCheck className="w-4 h-4 text-purple-600" />
+            <ShieldCheck className="w-3.5 h-3.5" />
             <span>المصارف الثمانية</span>
           </button>
         </div>
+      </div>
 
-        {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Main Full Page Scrollable Content */}
+      <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="max-w-2xl mx-auto space-y-4 pb-16">
           
-          {/* TAB 1: CASH, WEALTH, SAVINGS & TRADE */}
+          {/* TAB 1: CASH & WEALTH */}
           {activeTab === "wealth" && (
             <div className="space-y-4">
-              
-              <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-3">
-                <h4 className="text-xs font-bold font-tajawal text-stone-800 flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-emerald-700" />
+              <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm space-y-3.5">
+                <h3 className="text-sm font-bold font-tajawal text-stone-800 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-emerald-800" />
                   <span>السيولة النقدية والودائع البنكية (حال عليها الحول):</span>
-                </h4>
+                </h3>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   <div>
                     <label className="text-xs text-stone-600 font-tajawal block mb-1">
-                      النقود السائلة في اليد / المنزل ({currSymbol}):
+                      النقود السائلة في اليد أو المنزل ({currSymbol}):
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={cashInHand || ""}
                       onChange={(e) => setCashInHand(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm font-mono text-stone-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none text-right"
                     />
                   </div>
 
                   <div>
                     <label className="text-xs text-stone-600 font-tajawal block mb-1">
-                      الأموال في الحسابات البنكية والودائع الاستثمارية ({currSymbol}):
+                      الأموال في الحسابات البنكية والودائع ({currSymbol}):
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={cashInBank || ""}
                       onChange={(e) => setCashInBank(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm font-mono text-stone-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none text-right"
                     />
                   </div>
 
                   <div>
                     <label className="text-xs text-stone-600 font-tajawal block mb-1">
-                      الديون الجيدة المرجوة الاسترداد (أموال لك عند الآخرين) ({currSymbol}):
+                      الديون المرجوة الاسترداد (أموال لك عند الآخرين) ({currSymbol}):
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={receivables || ""}
                       onChange={(e) => setReceivables(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm font-mono text-stone-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none text-right"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Business & Stocks */}
-              <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-3">
-                <h4 className="text-xs font-bold font-tajawal text-stone-800 flex items-center gap-1.5">
-                  <ShoppingBag className="w-4 h-4 text-amber-600" />
+              {/* Trade Goods */}
+              <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm space-y-3.5">
+                <h3 className="text-sm font-bold font-tajawal text-stone-800 flex items-center gap-2">
+                  <ShoppingBag className="w-4 h-4 text-amber-700" />
                   <span>عروض التجارة والأسهم المضاربة:</span>
-                </h4>
+                </h3>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   <div>
                     <label className="text-xs text-stone-600 font-tajawal block mb-1">
-                      قيمة بضائع التجارة بسعر البيع الحالي ({currSymbol}):
+                      قيمة بضائع التجارة بسعر السوق الحالي ({currSymbol}):
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={tradeGoods || ""}
                       onChange={(e) => setTradeGoods(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm font-mono text-stone-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none text-right"
                     />
                   </div>
 
                   <div>
                     <label className="text-xs text-stone-600 font-tajawal block mb-1">
-                      قيمة الأسهم المشتراة للمضاربة والتداول ({currSymbol}):
+                      قيمة الأسهم المشتراة للتداول والمضاربة ({currSymbol}):
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={stocksTrading || ""}
                       onChange={(e) => setStocksTrading(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                      className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-sm font-mono text-stone-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none text-right"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Deductible Debts */}
-              <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-2">
-                <h4 className="text-xs font-bold font-tajawal text-rose-800 flex items-center gap-1.5">
-                  <span>الديون والالتزامات العاجلة التي عليك (تخصم من الوعاء):</span>
-                </h4>
-
-                <div>
-                  <input
-                    type="number"
-                    min="0"
-                    value={debtsOwed || ""}
-                    onChange={(e) => setDebtsOwed(parseFloat(e.target.value) || 0)}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2 rounded-xl border border-rose-200 text-sm font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
-                  />
-                  <span className="text-[10.5px] text-stone-500 font-amiri block mt-1">
-                    تخصم الديون المستحقة السداد حالاً فقط.
-                  </span>
-                </div>
+              <div className="bg-white p-5 rounded-3xl border border-rose-200 shadow-sm space-y-2.5">
+                <h3 className="text-sm font-bold font-tajawal text-rose-900">
+                  الديون والالتزامات العاجلة الواجب سدادها حالاً ({currSymbol}):
+                </h3>
+                <input
+                  type="number"
+                  dir="ltr"
+                  min="0"
+                  value={debtsOwed || ""}
+                  onChange={(e) => setDebtsOwed(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-full px-3.5 py-2.5 rounded-2xl border border-rose-200 text-sm font-mono text-stone-900 focus:ring-2 focus:ring-rose-500 focus:outline-none text-right"
+                />
+                <span className="text-xs text-stone-500 font-amiri block">
+                  تخصم من الوعاء الديون المستحقة السداد الفوري فقط.
+                </span>
               </div>
-
             </div>
           )}
 
           {/* TAB 2: GOLD & SILVER */}
           {activeTab === "gold_silver" && (
             <div className="space-y-4">
-              
-              {/* Gram Prices Config */}
-              <div className="bg-amber-50/80 p-3.5 rounded-2xl border border-amber-200/90 space-y-2">
-                <h4 className="text-xs font-bold font-tajawal text-amber-950 flex items-center gap-1.5">
-                  <Coins className="w-4 h-4 text-amber-600" />
+              <div className="bg-amber-50/80 p-4 rounded-3xl border border-amber-200/90 space-y-3">
+                <h3 className="text-xs font-bold font-tajawal text-amber-950 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-amber-700" />
                   <span>تعديل سعر الجرام الحالي لبلدك ({currSymbol}):</span>
-                </h4>
+                </h3>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] text-stone-600 font-tajawal block mb-1">
+                    <label className="text-xs text-stone-600 font-tajawal block mb-1">
                       سعر جرام الذهب عيار 24:
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="1"
                       value={gold24Price}
                       onChange={(e) => setGold24Price(parseFloat(e.target.value) || 1)}
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-xs font-mono font-bold"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-stone-300 text-xs font-mono font-bold text-center"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-stone-600 font-tajawal block mb-1">
-                      سعر جرام الفضة:
+                    <label className="text-xs text-stone-600 font-tajawal block mb-1">
+                      سعر جرام الفضة الخالصة:
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="1"
                       value={silverPrice}
                       onChange={(e) => setSilverPrice(parseFloat(e.target.value) || 1)}
-                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-xs font-mono font-bold"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-stone-300 text-xs font-mono font-bold text-center"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Gold Weight Inputs */}
-              <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-3">
+              <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold font-tajawal text-stone-800">
+                  <h3 className="text-sm font-bold font-tajawal text-stone-800">
                     أوزان الذهب المملوك (بالجرام):
-                  </h4>
-                  <span className="text-[11px] text-amber-700 font-bold">
+                  </h3>
+                  <span className="text-xs text-amber-800 font-bold font-tajawal">
                     النصاب: 85 جرام عيار 24
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2.5">
                   <div>
-                    <label className="text-[11px] text-stone-600 font-tajawal block mb-1">
-                      عيار 24 (جرام):
+                    <label className="text-xs text-stone-600 font-tajawal block mb-1 text-center">
+                      عيار 24 (جرام)
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={gold24Grams || ""}
                       onChange={(e) => setGold24Grams(parseFloat(e.target.value) || 0)}
                       placeholder="0"
-                      className="w-full px-2.5 py-2 rounded-xl border border-stone-300 text-xs font-mono font-bold"
+                      className="w-full px-3 py-2.5 rounded-2xl border border-stone-300 text-xs font-mono font-bold text-center"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-stone-600 font-tajawal block mb-1">
-                      عيار 21 (جرام):
+                    <label className="text-xs text-stone-600 font-tajawal block mb-1 text-center">
+                      عيار 21 (جرام)
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={gold21Grams || ""}
                       onChange={(e) => setGold21Grams(parseFloat(e.target.value) || 0)}
                       placeholder="0"
-                      className="w-full px-2.5 py-2 rounded-xl border border-stone-300 text-xs font-mono font-bold"
+                      className="w-full px-3 py-2.5 rounded-2xl border border-stone-300 text-xs font-mono font-bold text-center"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] text-stone-600 font-tajawal block mb-1">
-                      عيار 18 (جرام):
+                    <label className="text-xs text-stone-600 font-tajawal block mb-1 text-center">
+                      عيار 18 (جرام)
                     </label>
                     <input
                       type="number"
+                      dir="ltr"
                       min="0"
                       value={gold18Grams || ""}
                       onChange={(e) => setGold18Grams(parseFloat(e.target.value) || 0)}
                       placeholder="0"
-                      className="w-full px-2.5 py-2 rounded-xl border border-stone-300 text-xs font-mono font-bold"
+                      className="w-full px-3 py-2.5 rounded-2xl border border-stone-300 text-xs font-mono font-bold text-center"
                     />
                   </div>
                 </div>
 
-                {/* Silver weight */}
-                <div className="pt-2 border-t border-stone-100">
+                <div className="pt-3 border-t border-stone-100">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs text-stone-600 font-tajawal block">
                       وزن الفضة الخالصة (بالجرام):
                     </label>
-                    <span className="text-[10.5px] text-stone-500">
+                    <span className="text-[11px] text-stone-500 font-tajawal">
                       نصاب الفضة: 595 جرام
                     </span>
                   </div>
                   <input
                     type="number"
+                    dir="ltr"
                     min="0"
                     value={silverGrams || ""}
                     onChange={(e) => setSilverGrams(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs font-mono font-bold"
+                    className="w-full px-3.5 py-2.5 rounded-2xl border border-stone-300 text-xs font-mono font-bold text-center"
                   />
                 </div>
               </div>
-
-              {/* Gold Fiqh Note */}
-              <div className="bg-stone-50 p-3 rounded-2xl border border-stone-200 text-xs font-amiri text-stone-700 leading-relaxed space-y-1">
-                <span className="font-bold font-tajawal text-emerald-900 block">
-                  💡 فائدة فقهية معتمدة:
-                </span>
-                <p>
-                  ذهب الادخار والاستثمار والسبائك تجب فيه الزكاة إجماعاً إذا بلغ 85 جراماً وحال عليه الحول. أما حلي المرأة المستعمل للزينة المعتادة فجمهور الفقهاء (المالكية والشافعية والحنابلة) على أنه لا زكاة فيه، والأحوط إخراج زكاته إذا رغبت في الاستبراء لدينك.
-                </p>
-              </div>
-
             </div>
           )}
 
-          {/* TAB 3: ZAKAT AL-FITR */}
+          {/* TAB 3: FITR */}
           {activeTab === "fitr" && (
             <div className="space-y-4">
-              
-              <div className="bg-teal-50/80 p-4 rounded-2xl border border-teal-200/90 space-y-2">
-                <h4 className="text-sm font-bold font-tajawal text-teal-950 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-teal-700" />
+              <div className="bg-emerald-50/80 p-5 rounded-3xl border border-emerald-200/90 space-y-2">
+                <h3 className="text-base font-bold font-tajawal text-emerald-950 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-emerald-800" />
                   <span>زكاة الفطر (طهرة للصائم وطعمة للمساكين):</span>
-                </h4>
-                <p className="text-xs text-teal-900 font-amiri leading-relaxed">
-                  تجب زكاة الفطر على كل مسلم ومسلمة يملك قوت يومه وليلته وتخرج قبل صلاة عيد الفطر عن نفسه وعمن يعول (الزوجة والأولاد والوالدين إن كان ينفق عليهم).
+                </h3>
+                <p className="text-xs text-emerald-900 font-amiri leading-relaxed">
+                  تجب زكاة الفطر على كل مسلم ومسلمة يملك قوت يومه وليلته وتخرج قبل صلاة عيد الفطر عن نفسه وعمن يعول.
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-sm space-y-3">
+              <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-sm space-y-4">
                 <div>
                   <label className="text-xs font-bold font-tajawal text-stone-800 block mb-1">
                     عدد أفراد الأسرة (المشمولين بالزكاة):
                   </label>
                   <input
                     type="number"
+                    dir="ltr"
                     min="1"
                     max="100"
                     value={fitrFamilyMembers}
                     onChange={(e) => setFitrFamilyMembers(parseInt(e.target.value, 10) || 1)}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-base font-mono font-bold text-center"
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-300 text-base font-mono font-bold text-center"
                   />
                 </div>
 
@@ -543,53 +542,48 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
                   </label>
                   <input
                     type="number"
+                    dir="ltr"
                     min="1"
                     value={fitrValuePerPerson}
                     onChange={(e) => setFitrValuePerPerson(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm font-mono text-center font-bold"
+                    className="w-full px-4 py-3 rounded-2xl border border-stone-300 text-sm font-mono text-center font-bold"
                   />
-                  <span className="text-[10.5px] text-stone-500 font-amiri block mt-1 text-center">
-                    (أو ما يعادل صاعاً من غالب قوت البلد ~ 2.5 إلى 3 كجم أرز أو قمح)
-                  </span>
                 </div>
               </div>
 
-              {/* Fitr Calculation Result Card */}
-              <div className="bg-gradient-to-r from-teal-900 to-stone-900 text-white p-4 rounded-2xl border border-teal-600 shadow-md flex items-center justify-between">
+              <div className="bg-gradient-to-r from-emerald-950 to-stone-900 text-white p-5 rounded-3xl border border-emerald-700/60 shadow-md flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-teal-200 font-tajawal block">
-                    إجمالي زكاة الفطر لأسرتك
+                  <span className="text-xs font-bold text-emerald-200 font-tajawal block">
+                    إجمالي زكاة الفطر لأسرتك:
                   </span>
                   <span className="text-2xl font-black font-mono text-white mt-1 block">
-                    {totalFitrDue.toLocaleString("ar-EG")} {currSymbol}
+                    {totalFitrDue.toLocaleString("en-US")} {currSymbol}
                   </span>
-                  <span className="text-[11px] text-teal-300 font-tajawal">
+                  <span className="text-xs text-emerald-300 font-tajawal">
                     عن ({fitrFamilyMembers}) أفراد
                   </span>
                 </div>
 
-                <div className="w-12 h-12 rounded-2xl bg-teal-800/80 border border-teal-400/50 flex items-center justify-center text-teal-200">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-800/80 border border-emerald-500/40 flex items-center justify-center text-emerald-200">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
               </div>
-
             </div>
           )}
 
-          {/* TAB 4: THE 8 RECIPIENTS OF ZAKAT */}
+          {/* TAB 4: RECIPIENTS */}
           {activeTab === "recipients" && (
-            <div className="space-y-3">
-              
-              <div className="bg-purple-50/80 p-3.5 rounded-2xl border border-purple-200 text-purple-950 space-y-1.5">
-                <span className="text-xs font-bold font-tajawal block text-purple-900">
+            <div className="space-y-4">
+              <div className="bg-stone-100 p-4 rounded-3xl border border-stone-300 text-stone-900 space-y-2">
+                <span className="text-xs font-bold font-tajawal block text-emerald-900">
                   قال الله تعالى في سورة التوبة (الآية 60):
                 </span>
-                <p className="text-xs font-amiri leading-relaxed text-purple-900 italic">
-                  ﴿إِنَّمَا الصَّدَقَاتُ لِلْفُقَرَاءِ وَالْمَسَاكِينِ وَالْعَامِلِينَ عَلَيْهَا وَالْمُؤَلَّفَةِ قُلُوبُهُمْ وَفِي الرِّقَابِ وَالْغَارِمِينَ وَفِي سَبِيلِ اللَّهِ وَابْنِ السَّبِيلِ ۖ فَرِيضَةً مِّنَ اللَّهِ ۗ وَاللَّهُ عَلِيمٌ حَكِيمٌ﴾
+                <p className="text-xs font-amiri leading-relaxed text-stone-800 italic">
+                  ﴿إِنَّمَا الصَّدَقَاتُ لِلْفُقَرَاءِ وَالْمَسَاكِينِ وَالْعَامِلِينَ عَلَيْهَا وَالْمُؤَلَّفَةِ قُلُوبُهُمْ وَفِي الرِّقَابِ وَالْغَارِمِينَ وَفِي سَبِيلِ اللَّهِ وَابْنِ السَّبِيلِ فَرِيضَةً مِنَ اللَّهِ وَاللَّهُ عَلِيمٌ حَكِيمٌ﴾
                 </p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {[
                   { num: 1, name: "الفقراء", desc: "الذين لا يملكون كفايتهم اليومية ولا يجدون ما يسد رمقهم." },
                   { num: 2, name: "المساكين", desc: "الذين يملكون بعض الكفاية ولكن لا تسد كل حاجاتهم الأساسية." },
@@ -597,77 +591,77 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
                   { num: 4, name: "المؤلفة قلوبهم", desc: "حديثو العهد بالإسلام لتثبيتهم أو من يُرجى إسلامهم." },
                   { num: 5, name: "في الرقاب", desc: "تحرير العبيد وفكاك الأسرى والمساجين المعسرين." },
                   { num: 6, name: "الغارمون", desc: "من أثقلتهم الديون الحلال وعجزوا عن سدادها." },
-                  { num: 7, name: "في سبيل الله", desc: "الإنفاق في الجهاد الشرعي والدعوة ونشر العلم النافع." },
+                  { num: 7, name: "في سبيل الله", desc: "الإنفاق في أوجه الخير العامة والدعوة ونشر العلم النافع." },
                   { num: 8, name: "ابن السبيل", desc: "المسافر المنقطع عن ماله وبلده فيعطى ما يبلغه مقصده." },
                 ].map((item) => (
                   <div
                     key={item.num}
-                    className="bg-white p-3 rounded-2xl border border-stone-200/80 shadow-sm flex items-start gap-2.5"
+                    className="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm flex items-start gap-3"
                   >
-                    <span className="w-6 h-6 rounded-xl bg-purple-100 text-purple-900 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">
+                    <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold text-xs flex-shrink-0 font-mono">
                       {item.num}
                     </span>
                     <div>
-                      <h5 className="text-xs font-bold font-tajawal text-stone-900">
+                      <h4 className="text-xs font-bold font-tajawal text-stone-900">
                         {item.name}
-                      </h5>
-                      <p className="text-[11px] text-stone-600 font-amiri leading-relaxed">
+                      </h4>
+                      <p className="text-xs text-stone-600 font-amiri leading-relaxed mt-0.5">
                         {item.desc}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
-
             </div>
           )}
 
           {/* TOTAL ZAKAT SUMMARY FOOTER CARD (FOR WEALTH & GOLD) */}
           {(activeTab === "wealth" || activeTab === "gold_silver") && (
-            <div className="bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-950 text-white p-4 rounded-2xl border border-emerald-500/50 shadow-lg space-y-3">
-              <div className="flex items-center justify-between border-b border-emerald-800/60 pb-2">
+            <div className="bg-gradient-to-r from-emerald-950 via-stone-900 to-emerald-950 text-white p-5 rounded-3xl border border-emerald-600/50 shadow-xl space-y-3.5">
+              
+              <div className="flex items-center justify-between border-b border-emerald-800/60 pb-3">
                 <div>
                   <span className="text-xs font-bold text-emerald-300 font-tajawal block">
                     إجمالي وعاء الزكاة الخاضع للحساب:
                   </span>
-                  <span className="text-base font-bold font-mono text-stone-200">
-                    {totalCombinedZakatPool.toLocaleString("ar-EG")} {currSymbol}
+                  <span className="text-lg font-bold font-mono text-stone-200 tracking-wide">
+                    {totalCombinedZakatPool.toLocaleString("en-US")} {currSymbol}
                   </span>
                 </div>
 
-                <div className="text-left">
+                <div>
                   <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-lg font-tajawal ${
+                    className={`text-xs font-bold px-3 py-1.5 rounded-xl font-tajawal inline-block ${
                       isNisabReached
-                        ? "bg-emerald-600 text-white"
-                        : "bg-amber-600 text-white"
+                        ? "bg-emerald-700 text-white border border-emerald-500/40"
+                        : "bg-stone-800 text-amber-400 border border-amber-500/30"
                     }`}
                   >
-                    {isNisabReached ? "بلغ النصاب الشرعي ✓" : "دون النصاب ✕"}
+                    {isNisabReached ? "بلغ النصاب الشرعي" : "لم يبلغ النصاب"}
                   </span>
                 </div>
               </div>
 
-              {/* Total Due Amount */}
-              <div className="flex items-center justify-between">
+              {/* Total Due Amount & Action */}
+              <div className="flex items-center justify-between gap-3 pt-1">
                 <div>
                   <span className="text-xs font-bold font-tajawal text-amber-300 block">
                     مقدار الزكاة الواجب إخراجها (2.5%):
                   </span>
-                  <span className="text-2xl font-black font-mono text-white">
-                    {totalZakatDue.toLocaleString("ar-EG")} {currSymbol}
+                  <span className="text-2xl sm:text-3xl font-black font-mono text-white tracking-wide">
+                    {totalZakatDue.toLocaleString("en-US")} {currSymbol}
                   </span>
                 </div>
 
                 <button
                   onClick={handleCopySummary}
-                  className="px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs font-tajawal flex items-center gap-1.5 transition-all active:scale-95 shadow cursor-pointer"
+                  className="px-4 py-2.5 rounded-2xl bg-emerald-800 hover:bg-emerald-700 text-white font-bold text-xs font-tajawal flex items-center gap-2 transition-all active:scale-95 shadow cursor-pointer border border-emerald-600/40"
                   title="نسخ تقرير الزكاة"
                 >
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 text-emerald-300" />
-                      <span>تم النسخ!</span>
+                      <span>تم النسخ</span>
                     </>
                   ) : (
                     <>
@@ -677,26 +671,13 @@ export const ZakatCalculatorModal: React.FC<ZakatCalculatorModalProps> = ({
                   )}
                 </button>
               </div>
+
             </div>
           )}
 
         </div>
+      </main>
 
-        {/* Modal Footer */}
-        <div className="bg-stone-50 px-4 py-3 border-t border-stone-200 flex items-center justify-between">
-          <span className="text-[11px] text-stone-500 font-tajawal">
-            حساب شرعي دقيق وفق الضوابط الفقهية المعتمدة
-          </span>
-
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs font-tajawal cursor-pointer transition-all active:scale-95 shadow"
-          >
-            إغلاق
-          </button>
-        </div>
-
-      </div>
     </div>
   );
 };

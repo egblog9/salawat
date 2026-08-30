@@ -12,7 +12,6 @@ import {
   ExternalLink,
   ChevronLeft,
   Bell,
-  Sparkles,
   Zap,
 } from "lucide-react";
 import { systemNotificationManager } from "../utils/systemNotifications";

@@ -8,6 +8,9 @@ import {
   Calendar,
   CheckCircle2,
   Coins,
+  Mic,
+  BookMarked,
+  Bell,
 } from "lucide-react";
 
 interface AppFeaturesGridProps {
@@ -25,6 +28,39 @@ export const AppFeaturesGrid: React.FC<AppFeaturesGridProps> = ({
       icon: (
         <div className="w-6 h-6 flex items-center justify-center text-emerald-800">
           <BookOpen className="w-5 h-5 stroke-[2.2]" />
+        </div>
+      ),
+    },
+    {
+      id: "memorize",
+      title: "تحفيظ وتسميع",
+      highlight: true,
+      badge: "تجريبي",
+      icon: (
+        <div className="w-6 h-6 flex items-center justify-center text-emerald-800">
+          <Mic className="w-5 h-5 stroke-[2.2] text-emerald-700" />
+        </div>
+      ),
+    },
+    {
+      id: "hadith",
+      title: "الأحاديث الصحيحة",
+      highlight: true,
+      badge: "موثوق",
+      icon: (
+        <div className="w-6 h-6 flex items-center justify-center text-emerald-800">
+          <BookMarked className="w-5 h-5 stroke-[2.2]" />
+        </div>
+      ),
+    },
+    {
+      id: "floating_dhikr",
+      title: "الإشعار الزجاجي",
+      highlight: false,
+      badge: "جديد",
+      icon: (
+        <div className="w-6 h-6 flex items-center justify-center text-amber-700">
+          <Bell className="w-5 h-5 stroke-[2.2] text-amber-600" />
         </div>
       ),
     },

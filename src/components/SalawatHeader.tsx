@@ -1,5 +1,6 @@
 import React from "react";
 import { Bell, BellOff, Calendar, Square } from "lucide-react";
+import { getFullDateInfo } from "../utils/hijri";
 
 interface SalawatHeaderProps {
   notificationsEnabled?: boolean;
@@ -19,34 +20,7 @@ export const SalawatHeader: React.FC<SalawatHeaderProps> = ({
   onOpenDateDetails,
 }) => {
   const handleNotificationsClick = onOpenNotifications || onToggleNotifications || (() => {});
-  // Current Arabic date & day
-  const today = new Date();
-  const dayNames = [
-    "الأحد",
-    "الإثنين",
-    "الثلاثاء",
-    "الأربعاء",
-    "الخميس",
-    "الجمعة",
-    "السبت",
-  ];
-  const monthNames = [
-    "يناير",
-    "فبراير",
-    "مارس",
-    "أبريل",
-    "مايو",
-    "يونيو",
-    "يوليو",
-    "أغسطس",
-    "سبتمبر",
-    "أكتوبر",
-    "نوفمبر",
-    "ديسمبر",
-  ];
-
-  const currentDayName = dayNames[today.getDay()] || "الأربعاء";
-  const currentDateStr = `${today.getDate()} ${monthNames[today.getMonth()]} ${today.getFullYear()}`;
+  const dateInfo = getFullDateInfo();
 
   return (
     <header className="w-full flex items-center justify-between gap-2 pt-2 pb-1 select-none">
@@ -56,13 +30,13 @@ export const SalawatHeader: React.FC<SalawatHeaderProps> = ({
         <button
           id="header-notification-btn"
           onClick={handleNotificationsClick}
-          className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-100 flex items-center justify-center text-stone-700 hover:text-emerald-700 hover:border-emerald-200 transition-all active:scale-95 cursor-pointer relative"
+          className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-200/80 flex items-center justify-center text-stone-700 hover:text-emerald-800 hover:border-emerald-300 transition-all active:scale-95 cursor-pointer relative"
           title={notificationsEnabled ? "التذكيرات والإشعارات مفعّلة" : "تفعيل التذكيرات"}
         >
           {notificationsEnabled ? (
             <>
               <Bell className="w-5 h-5 text-emerald-800" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-600 ring-2 ring-white"></span>
             </>
           ) : (
             <BellOff className="w-5 h-5 text-stone-400" />
@@ -106,21 +80,28 @@ export const SalawatHeader: React.FC<SalawatHeaderProps> = ({
         </p>
       </div>
 
-      {/* Right: Date Pill Card */}
+      {/* Right: Date Card (Gregorian on Top & Hijri directly underneath) */}
       <button
         onClick={onOpenDateDetails}
-        className="h-11 sm:h-12 px-2.5 sm:px-3 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-100 flex items-center gap-2 hover:border-emerald-200 transition-all active:scale-95 text-right cursor-pointer"
-        title="التاريخ الهجري والميلادي"
+        className="h-11 sm:h-12 px-2.5 sm:px-3 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.04)] border border-stone-200/80 flex items-center gap-2 hover:border-emerald-300 transition-all active:scale-95 text-right cursor-pointer"
+        title="انقر لفتح التقويم الهجري والميلادي"
       >
-        <div className="flex flex-col items-start leading-tight">
-          <span className="text-[11px] font-bold text-emerald-900 font-tajawal">
-            {currentDayName}
-          </span>
-          <span className="text-[9.5px] text-stone-500 font-tajawal">
-            {currentDateStr}
-          </span>
+        <div className="flex flex-col items-start leading-tight justify-center">
+          {/* Gregorian Date */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold text-stone-800 font-tajawal">
+              {dateInfo.dayName}، {dateInfo.gregorianDate}
+            </span>
+          </div>
+          {/* Hijri Date Directly Underneath */}
+          <div className="flex items-center gap-1">
+            <span className="text-[9.5px] sm:text-[10px] font-semibold text-emerald-800 font-tajawal">
+              {dateInfo.hijriDateStr}
+            </span>
+          </div>
         </div>
-        <div className="w-7 h-7 rounded-xl bg-stone-50 flex items-center justify-center text-emerald-800">
+
+        <div className="w-7 h-7 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-800 flex-shrink-0">
           <Calendar className="w-4 h-4" />
         </div>
       </button>

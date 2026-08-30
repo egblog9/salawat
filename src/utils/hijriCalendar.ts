@@ -163,6 +163,11 @@ export interface HijriDateInfo {
   isSacredMonth: boolean;
 }
 
+function normalizeDigits(str: string): string {
+  if (!str) return "0";
+  return str.replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d).toString());
+}
+
 /**
  * High-accuracy conversion from Gregorian date to Hijri Date
  * Supports user offset (+1 / -1 / +2 days for moon sighting adjustments)
@@ -172,24 +177,28 @@ export function getHijriDate(date: Date = new Date(), adjustmentDays: number = 0
   
   // Use Intl with Islamic Umm al-Qura calendar
   try {
-    const formatter = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura", {
+    const formatter = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura-nu-latn", {
       day: "numeric",
       month: "numeric",
       year: "numeric",
       weekday: "long",
     });
 
+    const weekdayFormatter = new Intl.DateTimeFormat("ar-SA", {
+      weekday: "long",
+    });
+
     const parts = formatter.formatToParts(adjustedDate);
     let day = 1;
     let month = 1;
-    let year = 1447;
-    let dayName = "الأربعاء";
+    let year = 1448;
+    let dayName = weekdayFormatter.format(adjustedDate);
 
     for (const part of parts) {
-      if (part.type === "day") day = parseInt(part.value, 10) || 1;
-      if (part.type === "month") month = parseInt(part.value, 10) || 1;
-      if (part.type === "year") year = parseInt(part.value, 10) || 1447;
-      if (part.type === "weekday") dayName = part.value;
+      const val = parseInt(normalizeDigits(part.value), 10);
+      if (part.type === "day" && val) day = val;
+      if (part.type === "month" && val) month = val;
+      if (part.type === "year" && val) year = val;
     }
 
     const monthObj = HIJRI_MONTHS.find((m) => m.number === month) || HIJRI_MONTHS[0];
@@ -222,7 +231,7 @@ export function getHijriDate(date: Date = new Date(), adjustmentDays: number = 0
       day: 1,
       month: 1,
       monthName: monthObj.name,
-      year: 1447,
+      year: 1448,
       dayName: "اليوم",
       gregorianDate: adjustedDate,
       isWhiteDay: false,

@@ -42,7 +42,7 @@ export const VirtuesSection: React.FC<VirtuesSectionProps> = ({
         {VIRTUES_LIST.map((v, idx) => {
           const matchedTrack = SHEIKH_AUDIO_TRACKS.find((t) => t.id === v.sheikhTrackId) || SHEIKH_AUDIO_TRACKS[0];
           const isPlayingThis = isPlaying && activePlayingId === matchedTrack.id;
-          const shareText = `🌿 ${v.title} 🌿\n\nقال رسول الله ﷺ: ${v.hadith}\n(${v.narrator})\n\n🤍 الفائدة: ${v.benefit}\n\nاللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ 🤍\nتواصل معنا: https://www.facebook.com/share/1Bm2aq9mKm/`;
+          const shareText = `فضل: ${v.title}\n\nقال رسول الله ﷺ: ${v.hadith}\n(${v.narrator})\n\nالفائدة: ${v.benefit}\n\nاللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ\nتواصل معنا: https://www.facebook.com/share/1Bm2aq9mKm/`;
 
           return (
             <div
@@ -67,7 +67,7 @@ export const VirtuesSection: React.FC<VirtuesSectionProps> = ({
                 </div>
 
                 <div className="mt-3 text-xs sm:text-sm text-stone-300 font-amiri leading-relaxed">
-                  <span className="text-emerald-400 font-semibold">💡 الثمرة والأثر: </span>
+                  <span className="text-emerald-400 font-semibold">الثمرة والأثر: </span>
                   <span>{v.benefit}</span>
                 </div>
               </div>

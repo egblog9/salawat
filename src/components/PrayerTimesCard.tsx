@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MapPin,
   Sun,
@@ -10,6 +10,7 @@ import {
   Volume2,
   Clock,
 } from "lucide-react";
+import { getCityPrayerList, ISLAMIC_CITIES_DATABASE } from "../data/prayerTimesData";
 
 export interface PrayerItem {
   id: string;
@@ -33,15 +34,14 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
   const [countdown, setCountdown] = useState<string>("00:00:00");
   const [activePrayerId, setActivePrayerId] = useState<string>("fajr");
 
-  // Calculated Cairo Prayer times (24h format for exact calculations)
-  const prayerList: PrayerItem[] = [
-    { id: "fajr", name: "الفجر", displayTime: "4:20", hours24: 4, minutes: 20, icon: "fajr" },
-    { id: "sunrise", name: "الشروق", displayTime: "5:50", hours24: 5, minutes: 50, icon: "sunrise" },
-    { id: "dhuhr", name: "الظهر", displayTime: "12:45", hours24: 12, minutes: 45, icon: "dhuhr" },
-    { id: "asr", name: "العصر", displayTime: "4:15", hours24: 16, minutes: 15, icon: "asr" },
-    { id: "maghrib", name: "المغرب", displayTime: "7:35", hours24: 19, minutes: 35, icon: "maghrib" },
-    { id: "isha", name: "العشاء", displayTime: "8:55", hours24: 20, minutes: 55, icon: "isha" },
-  ];
+  // Get accurate prayer times list based on selected city
+  const prayerList: PrayerItem[] = useMemo(() => {
+    return getCityPrayerList(city);
+  }, [city]);
+
+  const cityMeta = useMemo(() => {
+    return ISLAMIC_CITIES_DATABASE.find((c) => c.name === city) || ISLAMIC_CITIES_DATABASE[0];
+  }, [city]);
 
   // Dynamic next prayer & live countdown ticker
   useEffect(() => {
@@ -86,7 +86,7 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
     updateNextPrayerAndCountdown();
     const interval = setInterval(updateNextPrayerAndCountdown, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [prayerList]);
 
   const renderPrayerIcon = (type: string, isActive: boolean) => {
     const iconClass = `w-5 h-5 ${isActive ? "text-amber-300" : "text-amber-500/80"}`;
@@ -191,7 +191,7 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
             <Compass className="w-4 h-4 text-emerald-700 flex-shrink-0" />
             <div>
               <span className="text-[10px] text-stone-400 block">اتجاه القبلة</span>
-              <span className="font-bold text-stone-800">136° نحو الكعبة المشرفة</span>
+              <span className="font-bold text-stone-800">{cityMeta.qiblaAngle}° نحو الكعبة المشرفة</span>
             </div>
           </div>
 
@@ -199,7 +199,7 @@ export const PrayerTimesCard: React.FC<PrayerTimesCardProps> = ({
             <Clock className="w-4 h-4 text-emerald-700 flex-shrink-0" />
             <div>
               <span className="text-[10px] text-stone-400 block">طريقة الحساب</span>
-              <span className="font-bold text-stone-800">الهيئة المصرية العامة</span>
+              <span className="font-bold text-stone-800">{cityMeta.calculationMethod}</span>
             </div>
           </div>
         </div>

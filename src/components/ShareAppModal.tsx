@@ -14,7 +14,7 @@ export const ShareAppModal: React.FC<ShareAppModalProps> = ({ isOpen, onClose })
     return typeof window !== "undefined" ? window.location.origin : "https://salawat-app.web.app";
   };
 
-  const shareText = `🌿 تطبيق «صَلَوَات» - الصلاة على النبي ﷺ
+  const shareText = `تطبيق «صَلَوَات» - الصلاة على النبي ﷺ
 تطبيق إسلامي للتسبيح والتذكير الصوتي بأصوات كبار المشايخ، قابل للتثبيت على أي هاتف مجاناً وبدون إعلانات.
 اجعله صدقة جارية لك ولوالديك وشاركه الآن:
 ${getShareUrl()}`;
@@ -34,7 +34,7 @@ ${getShareUrl()}`;
       try {
         await navigator.share({
           title: "تطبيق صلوات - الصلاة على النبي ﷺ",
-          text: `🌿 تطبيق «صَلَوَات» - مسبحة إلكترونية وتذكير صوتي دوري بالصلاة على النبي ﷺ بأصوات كبار القراء. اجعله صدقة جارية:`,
+          text: `تطبيق «صَلَوَات» - مسبحة إلكترونية وتذكير صوتي دوري بالصلاة على النبي ﷺ بأصوات كبار القراء. اجعله صدقة جارية:`,
           url: getShareUrl(),
         });
       } catch (err) {
@@ -53,7 +53,7 @@ ${getShareUrl()}`;
   };
 
   const shareViaTelegram = () => {
-    const url = `https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent("🌿 تطبيق «صَلَوَات» صدقة جارية - الصلاة على النبي ﷺ والتذكير الصوتي")}`;
+    const url = `https://t.me/share/url?url=${encodeURIComponent(getShareUrl())}&text=${encodeURIComponent("تطبيق «صَلَوَات» صدقة جارية - الصلاة على النبي ﷺ والتذكير الصوتي")}`;
     window.open(url, "_blank");
   };
 
@@ -98,7 +98,7 @@ ${getShareUrl()}`;
             </div>
             <div>
               <h3 className="text-xl font-bold font-tajawal text-stone-100 flex items-center gap-1.5">
-                <span>مشاركة التطبيق 📲</span>
+                <span>مشاركة التطبيق</span>
               </h3>
               <p className="text-xs text-emerald-400 font-medium">
                 اجعله صدقة جارية لك ولكل من يصلي على الحبيب ﷺ
