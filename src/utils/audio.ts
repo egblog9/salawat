@@ -1,5 +1,74 @@
 // Sheikh Audio Player & Dhikr Sound Synthesis Manager
 
+// Arabic Speech Synthesis Utility (Works 100% Offline without internet on all Android / iOS / Desktop browsers)
+export function speakArabicDhikr(
+  arabicText: string,
+  callbacks?: {
+    onStart?: () => void;
+    onEnded?: () => void;
+    onError?: (err: any) => void;
+  },
+  volume: number = 1.0
+): boolean {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    callbacks?.onError?.("Speech synthesis not supported");
+    return false;
+  }
+
+  try {
+    window.speechSynthesis.cancel(); // Stop any pending speech
+
+    // Clean text for perfect reverent pronunciation
+    const cleanText = arabicText
+      .replace(/[«»]/g, "")
+      .replace(/➜/g, "،")
+      .replace(/ﷺ/g, "صلى الله عليه وسلم")
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "ar-SA";
+    utterance.rate = 0.85; // Clear, dignified pace for azkar
+    utterance.pitch = 1.0;
+    utterance.volume = Math.min(1.0, Math.max(0.1, volume));
+
+    // Select the best available Arabic voice
+    const voices = window.speechSynthesis.getVoices();
+    const arabicVoice = voices.find(
+      (v) =>
+        v.lang.toLowerCase().startsWith("ar") ||
+        v.name.toLowerCase().includes("arabic") ||
+        v.name.toLowerCase().includes("tarik") ||
+        v.name.toLowerCase().includes("maged") ||
+        v.name.toLowerCase().includes("laila") ||
+        v.name.toLowerCase().includes("mariam")
+    );
+
+    if (arabicVoice) {
+      utterance.voice = arabicVoice;
+    }
+
+    utterance.onstart = () => {
+      callbacks?.onStart?.();
+    };
+
+    utterance.onend = () => {
+      callbacks?.onEnded?.();
+    };
+
+    utterance.onerror = (e) => {
+      console.warn("Arabic speech synthesis error:", e);
+      callbacks?.onEnded?.();
+    };
+
+    window.speechSynthesis.speak(utterance);
+    return true;
+  } catch (err) {
+    console.warn("Speech synthesis exception:", err);
+    callbacks?.onEnded?.();
+    return false;
+  }
+}
+
 class SheikhAudioManager {
   private audioElement: HTMLAudioElement | null = null;
   private ctx: AudioContext | null = null;
@@ -488,6 +557,11 @@ class ReminderAudioManager {
           }
         }).catch(() => {});
       }
+
+      // Pre-warm SpeechSynthesis on user interaction
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.getVoices();
+      }
     } catch (e) {
       // ignore
     }
@@ -499,6 +573,7 @@ class ReminderAudioManager {
     audioUrl?: string;
     fallbackUrl?: string;
     currentDhikrText?: string;
+    preferSpeech?: boolean;
     onStart?: () => void;
     onEnded?: () => void;
   }): void {
@@ -514,14 +589,50 @@ class ReminderAudioManager {
       this.setFormula(options.formulaId, options.audioUrl, options.fallbackUrl);
     }
 
-    // Determine exact target URL (Supports sequential rotating audio files)
+    // Determine exact target URL & Dhikr text
     let targetUrl = options?.audioUrl || this.primaryUrl;
     let secondaryFallbackUrl = options?.fallbackUrl || this.fallbackUrl;
+    let dhikrText = options?.currentDhikrText || "";
 
     if (this.currentFormulaId === "sequential_rotating_dhikr") {
       const currentSeq = this.getNextSequentialDhikr();
       targetUrl = currentSeq.audioUrl;
       secondaryFallbackUrl = currentSeq.fallbackUrl;
+      if (!dhikrText) {
+        dhikrText = currentSeq.ttsText;
+      }
+    }
+
+    // If text is still empty, derive from formula or sequential list
+    if (!dhikrText) {
+      const matchSeq = SEQUENTIAL_AZKAR_LIST.find((s) => s.id === this.currentFormulaId);
+      if (matchSeq) {
+        dhikrText = matchSeq.ttsText;
+      } else {
+        dhikrText = "اللهم صل وسلم وبارك على نبينا محمد";
+      }
+    }
+
+    // If preferSpeech is true or if offline and targetUrl is a remote URL
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+    const isRemoteUrl = targetUrl.startsWith("http://") || targetUrl.startsWith("https://");
+
+    if (options?.preferSpeech || (isOffline && isRemoteUrl)) {
+      this.isReminderPlaying = true;
+      options?.onStart?.();
+      sheikhAudioManager.playBeadClick();
+      const spoken = speakArabicDhikr(dhikrText, {
+        onEnded: () => {
+          this.isReminderPlaying = false;
+          options?.onEnded?.();
+        },
+      });
+      if (!spoken) {
+        sheikhAudioManager.playCompletionChime();
+        this.isReminderPlaying = false;
+        options?.onEnded?.();
+      }
+      return;
     }
 
     if (!this.reminderAudio) {
@@ -537,24 +648,34 @@ class ReminderAudioManager {
     audio.currentTime = 0;
     audio.volume = 1.0;
     audio.preload = "auto";
-
     audio.src = targetUrl;
 
     let hasFallbackRun = false;
+
+    const fallbackToSpeechOrChime = () => {
+      this.isReminderPlaying = true;
+      const spoken = speakArabicDhikr(dhikrText, {
+        onEnded: () => {
+          this.isReminderPlaying = false;
+          options?.onEnded?.();
+        },
+      });
+      if (!spoken) {
+        sheikhAudioManager.playCompletionChime();
+        this.isReminderPlaying = false;
+        options?.onEnded?.();
+      }
+    };
 
     audio.onerror = () => {
       if (!hasFallbackRun && secondaryFallbackUrl && secondaryFallbackUrl !== targetUrl) {
         hasFallbackRun = true;
         audio.src = secondaryFallbackUrl;
         audio.play().catch(() => {
-          this.isReminderPlaying = false;
-          sheikhAudioManager.playCompletionChime();
-          options?.onEnded?.();
+          fallbackToSpeechOrChime();
         });
       } else {
-        this.isReminderPlaying = false;
-        sheikhAudioManager.playCompletionChime();
-        options?.onEnded?.();
+        fallbackToSpeechOrChime();
       }
     };
 
@@ -570,19 +691,15 @@ class ReminderAudioManager {
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise.catch((err) => {
-        console.warn("Reminder playback attempt:", err);
+        console.warn("Reminder playback attempt error, switching to fallback:", err);
         if (!hasFallbackRun && secondaryFallbackUrl && secondaryFallbackUrl !== targetUrl) {
           hasFallbackRun = true;
           audio.src = secondaryFallbackUrl;
           audio.play().catch(() => {
-            this.isReminderPlaying = false;
-            sheikhAudioManager.playCompletionChime();
-            options?.onEnded?.();
+            fallbackToSpeechOrChime();
           });
         } else {
-          this.isReminderPlaying = false;
-          sheikhAudioManager.playCompletionChime();
-          options?.onEnded?.();
+          fallbackToSpeechOrChime();
         }
       });
     }

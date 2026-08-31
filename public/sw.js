@@ -1,5 +1,5 @@
 // Salawat PWA Service Worker
-const CACHE_NAME = "salawat-v3";
+const CACHE_NAME = "salawat-v4";
 const PRECACHE_ASSETS = [
   "/",
   "/index.html",

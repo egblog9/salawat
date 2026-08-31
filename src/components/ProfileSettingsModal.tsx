@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { REMINDER_VOICE_FORMULAS } from "../data/salawatData";
 import { ReminderVoiceFormula } from "../types";
-import { reminderAudioManager } from "../utils/audio";
+import { reminderAudioManager, SEQUENTIAL_AZKAR_LIST, RotatingDhikrItem } from "../utils/audio";
 import {
   fastingReminderManager,
   FastingReminderConfig,
@@ -90,13 +90,32 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
     { value: 60, label: "ساعة" },
   ];
 
+  const [testingSeqId, setTestingSeqId] = useState<string | null>(null);
+
+  const handleTestSequentialItem = (e: React.MouseEvent, item: RotatingDhikrItem) => {
+    e.stopPropagation();
+    setTestingSeqId(item.id);
+    reminderAudioManager.unlockAudio(item.audioUrl);
+    reminderAudioManager.playReminder({
+      audioUrl: item.audioUrl,
+      fallbackUrl: item.fallbackUrl,
+      currentDhikrText: item.ttsText,
+      onEnded: () => setTestingSeqId(null),
+    });
+    setTimeout(() => {
+      setTestingSeqId(null);
+    }, 4000);
+  };
+
   const handleTestVoice = (e: React.MouseEvent, formula: ReminderVoiceFormula) => {
     e.stopPropagation();
     setTestingVoiceId(formula.id);
+    reminderAudioManager.unlockAudio(formula.audioPath);
     reminderAudioManager.playReminder({
       formulaId: formula.id,
       audioUrl: formula.audioPath,
       fallbackUrl: formula.fallbackAyahUrl,
+      currentDhikrText: formula.ttsText,
       onEnded: () => setTestingVoiceId(null),
     });
     setTimeout(() => {
@@ -288,6 +307,55 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
                 );
               })}
             </div>
+
+            {/* If Sequential Mode is selected, show list of rotating Azkar with direct preview buttons */}
+            {selectedVoice.id === "sequential_rotating_dhikr" && (
+              <div className="mt-3 pt-3 border-t border-stone-200/80 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold font-tajawal text-emerald-800 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <span>قائمة الأذكار المتتابعة (اضغط لتجربة أي ذكر مباشرة):</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                    يعمل 100% بدون نت أوفلاين
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {SEQUENTIAL_AZKAR_LIST.map((seqItem) => {
+                    const isSeqTesting = testingSeqId === seqItem.id;
+                    return (
+                      <div
+                        key={seqItem.id}
+                        className="bg-white p-2.5 rounded-xl border border-stone-200 flex items-center justify-between gap-2 shadow-xs hover:border-emerald-400 transition-all"
+                      >
+                        <div className="min-w-0 flex-1 text-right">
+                          <span className="text-[11px] font-bold text-stone-800 block truncate font-amiri">
+                            {seqItem.arabicText}
+                          </span>
+                          <span className="text-[9.5px] text-stone-400 block truncate">
+                            {seqItem.sheikhName} • {seqItem.categoryName}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleTestSequentialItem(e, seqItem)}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 cursor-pointer flex-shrink-0 ${
+                            isSeqTesting
+                              ? "bg-amber-400 text-stone-950 animate-pulse"
+                              : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
+                          }`}
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          <span>{isSeqTesting ? "تشغيل..." : "استماع"}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Volume Boost 200% Direct Toggle */}
